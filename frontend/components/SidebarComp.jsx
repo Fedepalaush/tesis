@@ -1,4 +1,5 @@
 import React from 'react';
+import '../src/App.css'
 import {
   CDBSidebar,
   CDBSidebarContent,
@@ -11,8 +12,8 @@ import { NavLink } from 'react-router-dom';
 
 export default function SidebarComp ()  {
   return (
-    <div style={{ display: 'flex', overflow: 'scroll initial' }}>
-      <CDBSidebar textColor="#fff" backgroundColor="#333">
+    <div style={{  height:'100vh', position:'fixed' }}>
+      <CDBSidebar textColor="#fff" backgroundColor="#222">
         <CDBSidebarHeader prefix={<i className="fa fa-bars fa-large"></i>}>
           <a href="/" className="text-decoration-none" style={{ color: 'inherit' }}>
             Sidebar

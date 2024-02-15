@@ -43,14 +43,39 @@ function App() {
     fetchData();
   }, []);
 
+
+  
+    const [stockPrices, setStockPrices] = useState({});
+
+    useEffect(() => {
+        const fetchStockPrices = async () => {
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/activos2/');  // Adjust the URL as per your Django setup
+                setStockPrices(response.data);
+                console.log(response)
+            } catch (error) {
+                console.error('Error fetching stock prices:', error);
+            }
+        };
+
+        fetchStockPrices();
+    }, []);
+
+
+
+
   return (
     <Router>
       <>
-        <NavbarComp />
+        <div className="navbar">
+          <NavbarComp />
+        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <SidebarComp/>
-          <div>
+        <div className="content">
+          <div className="sidebar">
+            <SidebarComp />
+          </div>
+          <div className="main-content">
             <ul>
               {activosData.map((el) => (
                 <li key={el.id}>{el.ticker}</li>
@@ -58,6 +83,8 @@ function App() {
             </ul>
             <button onClick={handleSendData}>Crear Data</button>
             <Button variant="outline-dark">Presionamee</Button>
+            <p>AAPL: {stockPrices.AAPL}</p>
+            <p>MSFT: {stockPrices.MSFT}</p>
           </div>
         </div>
       </>

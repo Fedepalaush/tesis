@@ -1,6 +1,25 @@
-.sidebarContainer {
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh; /* Set the height to 100% of the viewport height */
+    overflow: auto; /* Enable scrolling if content exceeds viewport height */
+  }
+
+  .navbar {
+    margin-bottom: 55px;
+  }
+  
+  .content {
+    display: flex;
+  }
+  
+  .sidebar {
     width: 200px;
-    position: fixed;
-    top: 0;
-    left: 0;
-}
+    flex: 0 0 auto; /* Don't grow or shrink */
+    overflow-y: auto; /* Allow sidebar to scroll */
+  }
+  
+  .main-content {
+    flex: 1; /* Take remaining space */
+    overflow-y: auto; /* Allow main content to scroll */
+  }

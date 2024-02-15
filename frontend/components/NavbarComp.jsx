@@ -5,7 +5,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 
 function NavbarCustom() {
   return (
-    <Navbar collapseOnSelect expand="lg" className="bg-dark" variant="dark">
+    <Navbar collapseOnSelect expand="lg" className="bg-dark" variant="dark" fixed="top">
       <Container>
         <Navbar.Brand href="#home">Data Science Stocks</Navbar.Brand>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
