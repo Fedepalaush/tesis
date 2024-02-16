@@ -43,26 +43,24 @@ function App() {
     fetchData();
   }, []);
 
+  const [stockPrices, setStockPrices] = useState({});
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  
-    const [stockPrices, setStockPrices] = useState({});
+  useEffect(() => {
+    const fetchStockPrices = async () => {
+      try {
+        const response = await axios.get("http://127.0.0.1:8000/api/activos2/");
+        console.log(response.data);
+        setStockPrices(response.data);
 
-    useEffect(() => {
-        const fetchStockPrices = async () => {
-            try {
-                const response = await axios.get('http://127.0.0.1:8000/api/activos2/');  // Adjust the URL as per your Django setup
-                setStockPrices(response.data);
-                console.log(response)
-            } catch (error) {
-                console.error('Error fetching stock prices:', error);
-            }
-        };
+        setDataLoaded(true); // Marcamos los datos como cargados
+      } catch (error) {
+        console.error("Error fetching stock prices:", error);
+      }
+    };
 
-        fetchStockPrices();
-    }, []);
-
-
-
+    fetchStockPrices();
+  }, []);
 
   return (
     <Router>
@@ -83,8 +81,16 @@ function App() {
             </ul>
             <button onClick={handleSendData}>Crear Data</button>
             <Button variant="outline-dark">Presionamee</Button>
-            <p>AAPL: {stockPrices.AAPL}</p>
-            <p>MSFT: {stockPrices.MSFT}</p>
+            {dataLoaded && (
+              <>
+                {stockPrices.map((stock, index) => (
+                  <div key={index}>
+                    <p>Ticker: {stock.ticker}</p>
+                    <p>Precio: {stock.precio}</p>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </>

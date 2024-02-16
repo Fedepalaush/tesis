@@ -16,9 +16,9 @@ class ActivoViewSet (ModelViewSet):
 class Activo2ViewSet(viewsets.ViewSet):
     def list(self, request):
         yahoo = round(yf.Ticker('AAPL').history(period='1y').iloc[-1].Close,2)
-        yahoo2 = round(yf.Ticker('KO').history(period='1y').iloc[-1].Close,2)
+        yahoo2 = round(yf.Ticker('MSFT').history(period='1y').iloc[-1].Close,2)
         
-        data = [{'ticker': 'AAPL', 'precio':yahoo}, {'ticker': 'KO', 'precio': yahoo2}]  # Sample data
+        data = [{'ticker': 'AAPL', 'precio':yahoo}, {'ticker': 'MSFT', 'precio': yahoo2}]  # Sample data
         serializer = Activo2Serializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
