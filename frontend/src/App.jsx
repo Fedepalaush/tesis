@@ -83,13 +83,19 @@ function App() {
             <Button variant="outline-dark">Presionamee</Button>
             {dataLoaded && (
               <>
-                {stockPrices.map((stock, index) => (
-                  <div key={index}>
-                    <p>Ticker: {stock.ticker}</p>
-                    <p>Precio: {stock.precio}</p>
-                  </div>
-                ))}
-              </>
+              {stockPrices.map((stock, index) => (
+                <div key={index}>
+                  <p>Ticker: {stock.ticker}</p>
+                  <p>
+                    Precios:
+                    {stock.prices.map((price, idx) => (
+                      <span key={idx}>{price}{idx !== stock.prices.length - 1 ? ', ' : ''}</span>
+                    ))}
+                  </p>
+                </div>
+              ))}
+            </>
+            
             )}
           </div>
         </div>

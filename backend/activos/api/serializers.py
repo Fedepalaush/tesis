@@ -11,5 +11,5 @@ class ActivoSerializer(ModelSerializer):
 
 class Activo2Serializer(serializers.Serializer):
     ticker = serializers.CharField()
-    precio = serializers.DecimalField(max_digits=10, decimal_places=2)   
+    prices = serializers.ListField(child=serializers.DecimalField(max_digits=20, decimal_places=3))   
 
