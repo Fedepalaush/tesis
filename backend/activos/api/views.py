@@ -5,6 +5,7 @@ from ..models import Activo
 from .serializers import ActivoSerializer, Activo2Serializer
 from rest_framework.response import Response
 import yfinance as yf
+from decimal import Decimal
 
 from django.http import JsonResponse
 import json
@@ -14,14 +15,24 @@ class ActivoViewSet (ModelViewSet):
     serializer_class = ActivoSerializer  
 
 class Activo2ViewSet(viewsets.ViewSet):
-    def list(self, request):
-        yahoo = round(yf.Ticker('AAPL').history(period='1y').iloc[-1].Close,2)
-        yahoo2 = round(yf.Ticker('MSFT').history(period='1y').iloc[-1].Close,2)
         
-        data = [{'ticker': 'AAPL', 'precio':yahoo}, {'ticker': 'MSFT', 'precio': yahoo2}]  # Sample data
+    def list(self, request):
+        aapl_data = yf.Ticker('AAPL').history(period='1y').iloc[1:10].Close
+        msft_data = yf.Ticker('MSFT').history(period='1y').iloc[1:10].Close
+
+# Rounding each value to three decimal places and converting to list
+        yahoo_aapl = [round(Decimal(price), 3) for price in aapl_data]
+        yahoo_msft = [round(Decimal(price), 3) for price in msft_data]
+        
+        data = [
+            {'ticker': 'AAPL', 'prices': yahoo_aapl},
+            {'ticker': 'MSFT', 'prices': yahoo_msft}
+        ]
+        
         serializer = Activo2Serializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.data)
+        
+        return Response(serializer.validated_data)
 
     def create(self, request):
         serializer = Activo2Serializer(data=request.data)
