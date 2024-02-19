@@ -6,6 +6,7 @@ from .serializers import ActivoSerializer, Activo2Serializer
 from rest_framework.response import Response
 import yfinance as yf
 from decimal import Decimal
+from django.views.decorators.csrf import csrf_exempt
 
 from django.http import JsonResponse
 import json
@@ -56,3 +57,31 @@ class Activo2ViewSet(viewsets.ViewSet):
         # Implement destroy logic here
         pass  
 
+@csrf_exempt 
+def my_custom_view(request):
+     if request.method == 'POST':
+      # Decode the bytes object to convert it into a string
+      body_string = request.body.decode('utf-8')
+
+# Parse the string as JSON
+      data = json.loads(body_string)
+
+# Access the parametro value
+      parametro = data['params']['parametro']
+          # If you're sending JSON data, use request.body to get the raw JSON string
+        # Convert the JSON string to a Python dictionary using json.loads
+        # For example:
+
+        # Execute your function based on the parameter received
+        # For example:
+        # result = my_function(parametro)
+        # Fetch historical data
+      historical_data = yf.Ticker(parametro).history(period='1y')
+        
+        # Extract close prices
+      close_prices = historical_data['Close'].tolist()
+        
+        # Return all close prices
+      return JsonResponse({'close_prices': close_prices})
+     else:
+      return JsonResponse({'error': 'Only POST requests are allowed.'}, status=400)

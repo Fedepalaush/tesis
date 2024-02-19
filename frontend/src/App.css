@@ -6,7 +6,7 @@ body {
   }
 
   .navbar {
-    margin-bottom: 55px;
+    margin-bottom: 40px;
   }
   
   .content {
@@ -14,12 +14,11 @@ body {
   }
   
   .sidebar {
-    width: 200px;
-    flex: 0 0 auto; /* Don't grow or shrink */
-    overflow-y: auto; /* Allow sidebar to scroll */
+    margin-right: 50px;
+    right: 50;
   }
   
   .main-content {
-    flex: 1; /* Take remaining space */
-    overflow-y: auto; /* Allow main content to scroll */
+    display: flex;
+    flex-direction: row;
   }

@@ -27,7 +27,7 @@ export default function SidebarComp ()  {
               padding: '20px 5px',
             }}
           >
-            Sidebar Footer
+        
           </div>
         </CDBSidebarFooter>
       </CDBSidebar>
