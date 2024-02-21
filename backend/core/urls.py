@@ -16,11 +16,15 @@ Including another URLconf
 """
 from activos.api import views
 from django.contrib import admin
+from graphene_django.views import GraphQLView
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/', include('core.api.urls')),
     path('my_custom_view/', views.my_custom_view, name='my_custom_view'),
+    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    
     
 ]

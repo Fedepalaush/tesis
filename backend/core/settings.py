@@ -42,9 +42,13 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'activos',
+    'graphene_django',
 
 ]
 
+GRAPHENE = {
+    "SCHEMA": "core.schema.schema"
+}
 
 #CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
 
