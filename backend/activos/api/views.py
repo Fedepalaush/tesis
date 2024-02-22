@@ -59,29 +59,13 @@ class Activo2ViewSet(viewsets.ViewSet):
 
 @csrf_exempt 
 def my_custom_view(request):
-     if request.method == 'POST':
-      # Decode the bytes object to convert it into a string
-      body_string = request.body.decode('utf-8')
-
-# Parse the string as JSON
-      data = json.loads(body_string)
-
-# Access the parametro value
-      parametro = data['params']['parametro']
-          # If you're sending JSON data, use request.body to get the raw JSON string
-        # Convert the JSON string to a Python dictionary using json.loads
-        # For example:
-
-        # Execute your function based on the parameter received
-        # For example:
-        # result = my_function(parametro)
-        # Fetch historical data
-      historical_data = yf.Ticker(parametro).history(period='1y')
-        
-        # Extract close prices
-      close_prices = historical_data['Close'].tolist()
-        
-        # Return all close prices
-      return JsonResponse({'close_prices': close_prices})
-     else:
-      return JsonResponse({'error': 'Only POST requests are allowed.'}, status=400)
+    if request.method == 'GET':
+        parametro = request.GET.get('parametro', None)
+        if parametro:
+            historical_data = yf.Ticker(parametro).history(period='1y')
+            close_prices = historical_data['Close'].tolist()
+            return JsonResponse({'close_prices': close_prices})
+        else:
+            return JsonResponse({'error': 'Parameter "parametro" is required.'}, status=400)
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)

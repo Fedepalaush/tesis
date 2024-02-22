@@ -37,8 +37,21 @@ function App() {
 
   const { data, loading, error } = useQuery(FILMS_QUERY);
 
+  const parametroValue = 'BA'; // Or any other value you want to send
 
-  console.log(data)
+  axios.get('http://localhost:8000/my_custom_view/', {
+    params: {
+      parametro: parametroValue
+    }
+  })
+    .then(response => {
+      // Handle successful response
+      console.log(response.data);
+    })
+    .catch(error => {
+      // Handle error
+      console.error('Error fetching data:', error);
+    });
 
   if (loading) return "Loading...";
   if (error) return <pre>{error.message}</pre>
@@ -62,11 +75,15 @@ function App() {
           <div>
           </div>
           <div>
-          <ul>
+
+
+
+            
+{/*           <ul>
         {data.activos.map((activo) => (
           <li key={activo.id}>{activo.ticker + activo.precio}</li>
         ))}
-      </ul>
+      </ul> */}
 
             <div>
               
