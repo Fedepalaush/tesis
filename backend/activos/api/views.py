@@ -57,14 +57,16 @@ class Activo2ViewSet(viewsets.ViewSet):
         # Implement destroy logic here
         pass  
 
-@csrf_exempt 
+@csrf_exempt
 def my_custom_view(request):
     if request.method == 'GET':
         parametro = request.GET.get('parametro', None)
         if parametro:
             historical_data = yf.Ticker(parametro).history(period='1y')
-            close_prices = historical_data['Close'].tolist()
-            return JsonResponse({'close_prices': close_prices})
+            data = []
+            for date, close_price in zip(historical_data.index, historical_data['Close']):
+                data.append({'date': date.strftime('%Y-%m-%d'), 'close_price': close_price})
+            return JsonResponse({'data': data})
         else:
             return JsonResponse({'error': 'Parameter "parametro" is required.'}, status=400)
     else:

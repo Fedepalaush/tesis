@@ -1,27 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
+import Plot from 'react-plotly.js';
 
-const ChartComponent = () => {
-    const [chartData, setChartData] = useState('');
+function ChartComp({ data }) {
+  console.log(data);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get('/api/generate-chart');
-                setChartData(response.data.chart_data);
-            } catch (error) {
-                console.error('Error fetching chart data:', error);
-            }
-        };
+  // Extracting dates and close prices from data
+  const dates = data.data.map(item => item.date);
+  const closePrices = data.data.map(item => item.close_price);
 
-        fetchData();
-    }, []);
+  // Define trace for the plot
+  const trace = {
+    x: dates,
+    y: closePrices,
+    type: 'scatter',
+    mode: 'lines',
+    marker: { color: 'red' },
+    name: 'Stock Data',
+  };
 
-    return (
-        <div>
-            {chartData && <img src={`data:image/png;base64,${chartData}`} alt="Chart" />}
-        </div>
-    );
-};
+  // Define layout for the plot
+  const layout = {
+    title: 'Stock Data Chart',
+    xaxis: { title: 'Date' },
+    yaxis: { title: 'Close Price' },
+  };
 
-export default ChartComponent;
+  return (
+    <div>
+      <h2>Stock Data Chart</h2>
+      <Plot
+        data={[trace]}
+        layout={layout}
+      />
+    </div>
+  );
+}
+
+export default ChartComp;
