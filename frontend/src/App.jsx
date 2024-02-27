@@ -17,6 +17,7 @@ function App() {
   const [stockPrices, setStockPrices] = useState({});
   const [dataLoaded, setDataLoaded] = useState(false);
   const [selectedParametro, setSelectedParametro] = useState("BA"); // Default value
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1d"); // Default value
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,6 +25,7 @@ function App() {
         const response = await axios.get("http://localhost:8000/my_custom_view/", {
           params: {
             parametro: selectedParametro,
+            timeframe: selectedTimeframe // Include selected timeframe in the request
           },
         });
         setStockPrices(response.data);
@@ -37,11 +39,16 @@ function App() {
     fetchData();
 
     // Cleanup function not needed in this case because there are no subscriptions or timers
-  }, [selectedParametro]); // Fetch data when selectedParametro changes
+  }, [selectedParametro, selectedTimeframe]); // Fetch data when selectedParametro or selectedTimeframe changes
 
   // Handler function for dropdown change
   const handleParametroChange = (event) => {
     setSelectedParametro(event.target.value);
+  };
+
+  // Handler function for timeframe dropdown change
+  const handleTimeframeChange = (event) => {
+    setSelectedTimeframe(event.target.value);
   };
 
   return (
@@ -62,6 +69,13 @@ function App() {
               <option value="KO">KO</option>
               <option value="NVDA">NVDA</option>
             </select>
+
+            <select value={selectedTimeframe} onChange={handleTimeframeChange}>
+              <option value="1d">1 Day</option>
+              <option value="4h">4 Hours</option>
+              <option value="1s">1 Week</option>
+            </select>
+            
             {dataLoaded && <ChartComp data={stockPrices} />}
           </div>
         </div>

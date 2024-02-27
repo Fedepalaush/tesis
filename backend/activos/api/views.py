@@ -57,6 +57,7 @@ class Activo2ViewSet(viewsets.ViewSet):
         # Implement destroy logic here
         pass  
 
+
 @csrf_exempt
 def my_custom_view(request):
     if request.method == 'GET':
@@ -64,8 +65,14 @@ def my_custom_view(request):
         if parametro:
             historical_data = yf.Ticker(parametro).history(period='1y')
             data = []
-            for date, close_price in zip(historical_data.index, historical_data['Close']):
-                data.append({'date': date.strftime('%Y-%m-%d'), 'close_price': close_price})
+            for date, row in historical_data.iterrows():
+                data.append({
+                    'date': date.strftime('%Y-%m-%d'),
+                    'open_price': row['Open'],
+                    'high_price': row['High'],
+                    'low_price': row['Low'],
+                    'close_price': row['Close']
+                })
             return JsonResponse({'data': data})
         else:
             return JsonResponse({'error': 'Parameter "parametro" is required.'}, status=400)
