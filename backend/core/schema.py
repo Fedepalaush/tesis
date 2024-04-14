@@ -1,5 +1,5 @@
 import graphene
-from activos.models import Activo
+from api.models import Activo
 from graphene_django import DjangoObjectType
 
 class ActivosType(DjangoObjectType):
