@@ -6,6 +6,7 @@ class Activo(models.Model):
     ticker = models.CharField(max_length=10)
     cantidad = models.IntegerField(default=1)
     precioCompra = models.FloatField()
+    precioActual = models.FloatField(null=True)
     precioVenta = models.FloatField(null=True)
     fechaCompra = models.DateTimeField(auto_now_add=True)
     fechaVenta = models.DateTimeField(null=True)

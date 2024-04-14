@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from rest_framework import generics
 from .serializers import UserSerializer
+from django.db.models import F
 from rest_framework.permissions import IsAuthenticated, AllowAny 
 
 
@@ -72,13 +73,47 @@ class ActivoListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Activo.objects.filter(usuario=user)
+        # Obtener todos los activos del usuario
+        activos = Activo.objects.filter(usuario=user)
+
+        # Actualizar el precio actual de cada activo
+        for activo in activos:
+            symbol = activo.ticker  # Asumiendo que hay un campo 'symbol' en tu modelo Activo
+            precio_actual = self.get_precio_actual(symbol)
+            activo.precioActual = precio_actual
+            activo.save()
+
+        return activos
     
-    def perform_create(self,serializer):
+    def perform_create(self, serializer):
         if serializer.is_valid():
-            serializer.save(usuario=self.request.user)
+            ticker = serializer.validated_data['ticker']
+            cantidad_comprada = serializer.validated_data['cantidad']
+            precio_compra = serializer.validated_data['precioCompra']
+            
+            try:
+                activo_existente = Activo.objects.get(ticker=ticker, usuario=self.request.user)
+                cantidad_anterior = activo_existente.cantidad
+                precio_compra_anterior = activo_existente.precioCompra
+                nuevo_precio_compra = ((precio_compra_anterior * cantidad_anterior) + (precio_compra * cantidad_comprada)) / (cantidad_anterior + cantidad_comprada)
+                print()
+                activo_existente.cantidad = F('cantidad') + cantidad_comprada
+                activo_existente.precioCompra = nuevo_precio_compra
+                activo_existente.save()
+            except Activo.DoesNotExist:
+                activo = serializer.save(usuario=self.request.user)
+                activo.precioActual = precio_actual
+                activo.save()
         else:
-            print(serializer.errors)    
+            print(serializer.errors)
+
+    def get_precio_actual(self, symbol):
+        # Obtener datos históricos de yfinance
+        data = yf.download(symbol, period="1d")
+        # Tomar el último precio (último día en el período)
+        ultimo_precio = round(data['Close'].iloc[-1],3)
+        
+        return ultimo_precio
 
 class ActivoDelete(generics.DestroyAPIView):
     serializer_class = ActivoSerializer

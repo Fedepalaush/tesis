@@ -18,5 +18,5 @@ class UserSerializer(serializers.ModelSerializer):
 class ActivoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Activo 
-        fields = ("id",'ticker', "cantidad" , 'precioCompra', 'precioVenta', 'fechaCompra', 'fechaVenta', 'usuario')
+        fields = ("id",'ticker', "cantidad" , 'precioCompra', 'precioActual', 'precioVenta', 'fechaCompra', 'fechaVenta', 'usuario')
         extra_kwargs = {'usuario' : {"read_only":True}}

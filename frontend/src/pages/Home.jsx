@@ -35,7 +35,7 @@ function Home() {
 
   // Calcula el total acumulado
   const totalSum = tickers.reduce((acc, item) => acc + item.precioCompra * item.cantidad, 0).toFixed(2);
-  const invActual = (totalSum * 1.1).toFixed(2);
+  const invActual = tickers.reduce((acc, item) => acc + item.precioActual * item.cantidad, 0).toFixed(2);
   const diferencia = ((invActual / totalSum - 1) * 100).toFixed(2);
 
   // Actualiza el estado local cuando el total cambia
@@ -112,7 +112,7 @@ function Home() {
         setPrecioCompra(0);
         setCantidad(1);
         getActivos();
-        setOpenCompra(false)
+        setOpenCompra(false )
       })
       .catch((err) => alert(err));
   };
