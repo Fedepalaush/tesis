@@ -1,8 +1,11 @@
-import Form from "../components/Form"
+import Form from "../components/FormLogin";
 
-import React from "react"
-function Login () {
-    return <Form route="/api/token/" method="login"/>
+import React from "react";
+function Login() {
+  return (
+      <Form route="/api/token/" method="login" />
+
+  );
 }
 
-export default Login
+export default Login;

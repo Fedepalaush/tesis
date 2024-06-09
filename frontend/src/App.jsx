@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Visualizacion from "./pages/Visualizacion";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import axios from "axios";
@@ -18,6 +19,9 @@ import { SparkAreaUsageExample } from "./components/SparkChart";
 import { DonutChartUsageExampleWithCustomColors } from "./components/DonutChart";
 
 import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from "@apollo/client";
+import AnalisisActivo from "./pages/AnalisisActivo";
+import Fundamental from "./pages/Fundamental";
+import SharpeRatioChart from "./pages/SharpeRatio";
 
 function Logout() {
   localStorage.clear();
@@ -85,6 +89,10 @@ function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/logout" element={<Logout/>} />
         <Route path="/register" element={<RegisterAndLogout />} />
+        <Route path="/visualizacion" element={<Visualizacion />} />
+        <Route path="/sharpeRatio" element={<SharpeRatioChart />} />
+        <Route path="/fundamental" element={<Fundamental />} />
+        <Route path="/analisisActivo" element={<AnalisisActivo />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/*       <div>

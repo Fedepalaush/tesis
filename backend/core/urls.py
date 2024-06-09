@@ -1,6 +1,6 @@
 
 from api.views import CreateUserView
-from api.views import my_custom_view
+from api.views import get_activo, get_fundamental_info
 from django.contrib import admin
 from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
@@ -14,10 +14,14 @@ urlpatterns = [
     path("api/user/register/", CreateUserView.as_view(), name="register"),
     path("api/token/", TokenObtainPairView.as_view(), name="get_token"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),
-    path('api-auth/', include('rest_framework.urls')),
+    #path('api-auth/', include('rest_framework.urls')),
 
     path('api/', include('api.urls')),
-    path('my_custom_view/', my_custom_view, name='my_custom_view'),
+    path('get_activo/', get_activo, name='get_activo'),
+    path('get_fundamental/', get_fundamental_info, name='get_fundamental'),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
+
+    path('api/get_correlation_matrix', views.get_correlation_matrix, name='get_correlation_matrix'),
+    path('sharpe-ratio/', views.sharpe_ratio, name='sharpe_ratio'),
     
 ]

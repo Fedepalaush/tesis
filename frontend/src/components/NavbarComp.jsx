@@ -3,9 +3,10 @@ import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 const navigation = [
-  { name: 'Portfolio', href: '#', current: true },
+  { name: 'Portfolio', href: '/', current: true },
   { name: 'ML', href: '#', current: false },
-  { name: 'Visualización', href: '#', current: false },
+  { name: 'Visualización', href: '/visualizacion', current: false },
+  { name: 'Fundamental', href: '/fundamental', current: false },
   { name: 'Backtesting', href: '#', current: false },
 ]
 

@@ -128,7 +128,7 @@ function Home() {
             <aside class="h-screen sticky top-0">
               <Sidebar className="sticky left-0 top-0">
                 <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" alert active />
-                <SidebarItem icon={<BarChart3 size={20} />} text="Estadisticas" />
+                <SidebarItem icon={<BarChart3 size={20} />} text="Análisis" href="/analisisActivo" />
                 <SidebarItem icon={<UserCircle size={20} />} text="Usuarios" />
                 <SidebarItem icon={<Boxes size={20} />} text="Inventario" />
                 <SidebarItem icon={<Package size={20} />} text="Ordenes" />
