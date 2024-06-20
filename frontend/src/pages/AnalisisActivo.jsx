@@ -1,109 +1,203 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import BaseLayout from "../components/BaseLayout";
-import { useState, useEffect } from "react";
-import api from "../api";
 import axios from "axios";
 import Plot from "react-plotly.js";
 import { CardUsageExample } from "../components/Card";
+import ReactTooltip from "react-tooltip";
 
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
 
   const [data, setData] = useState([]);
+  const [ticker, setTicker] = useState("AAPL");
+  const [timeframe, setTimeframe] = useState("1d");
 
-  // Extraer los datos de apertura, alto, bajo y cierre
-  const dates = data.map((item) => item.date);
-  const open = data.map((item) => item.open_price);
-  const high = data.map((item) => item.high_price);
-  const low = data.map((item) => item.low_price);
-  const close = data.map((item) => item.close_price);
-  const rsi = data.map((item) => item.rsi);
-  const ema200 = data.map((item) => item.ema_200);
+  const [dates, setDates] = useState([]);
+  const [open, setOpen] = useState([]);
+  const [high, setHigh] = useState([]);
+  const [low, setLow] = useState([]);
+  const [close, setClose] = useState([]);
+  const [rsi, setRsi] = useState([]);
+  const [ema200, setEma200] = useState([]);
+  const [ema9, setEma9] = useState([]);
+  const [ema21, setEma21] = useState([]);
 
-  const lastRsi = rsi.slice(-1)[0];
-  const lastEma = ema200.slice(-1)[0];
-  const lastClose = close.slice(-1)[0];
+  const [lastRsi, setLastRsi] = useState(undefined);
+  const [lastEma, setLastEma] = useState(undefined);
+  const [lastClose, setLastClose] = useState(undefined);
+  const [lastEma9, setLastEma9] = useState(undefined);
+  const [lastEma21, setLastEma21] = useState(undefined);
+  const [diferenciaHoy, setDiferenciaHoy] = useState(undefined);
+  const [diferenciaSemana, setDiferenciaSemana] = useState(undefined);
+  const [diferenciaEma, setDiferenciaEma] = useState(undefined);
 
-  // Obtener el valor de cierre de hace 7 días
-  const close7DaysAgo = close.slice(-7)[0]; // Último valor hace 7 días
+  useEffect(() => {
+    if (data.length > 0) {
+      const dates = data.map((item) => item.date);
+      const open = data.map((item) => item.open_price);
+      const high = data.map((item) => item.high_price);
+      const low = data.map((item) => item.low_price);
+      const close = data.map((item) => item.close_price);
+      const rsi = data.map((item) => item.rsi);
+      const ema200 = data.map((item) => item.ema_200);
+      const ema9 = data.map((item) => item.ema_9);
+      const ema21 = data.map((item) => item.ema_21);
 
-  // Obtener el valor de cierre actual
-  const closeCurrent = close[close.length - 1]; // Último valor actual
+      setDates(dates);
+      setOpen(open);
+      setHigh(high);
+      setLow(low);
+      setClose(close);
+      setRsi(rsi);
+      setEma200(ema200);
+      setEma9(ema9);
+      setEma21(ema21);
 
-  // Calcular la diferencia en porcentaje
-  const percentageDifference = ((closeCurrent - close7DaysAgo) / close7DaysAgo) * 100;
+      const lastRsi = rsi.slice(-1)[0];
+      const lastEma = ema200.slice(-1)[0];
+      const lastClose = close.slice(-1)[0];
+      const lastEma9 = parseFloat(ema9.slice(-1)[0]);
+      const lastEma21 = parseFloat(ema21.slice(-1)[0]);
+      const closeYesterday = close.slice(-2)[0]; // Precio de cierre del día anterior
+      const diferenciaHoy = ((lastClose - closeYesterday) / closeYesterday) * 100;
+      const closeLastWeek = close.length >= 5 ? close.slice(-5)[0] : undefined; // Precio de cierre hace una semana
+      const diferenciaSemana = closeLastWeek !== undefined ? ((lastClose - closeLastWeek) / closeLastWeek) * 100 : undefined;
+      console.log("Ema9" + lastEma9)
+      console.log("Ema21" + lastEma21)
+      const diferenciaEma = ((lastEma21 - lastEma9) / lastEma9) * 100;
+
+      setLastRsi(lastRsi);
+      setLastEma(lastEma);
+      setLastClose(lastClose);
+      setLastEma9(lastEma9);
+      setLastEma21(lastEma21);
+      setDiferenciaHoy(diferenciaHoy);
+      setDiferenciaSemana(diferenciaSemana);
+      setDiferenciaEma(diferenciaEma);
+    }
+  }, [data]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get("http://localhost:8000/get_activo/", {
           params: {
-            ticker: "AAPL",
-            timeframe: "1d", // Include selected timeframe in the request
+            ticker: ticker,
+            timeframe: timeframe,
           },
         });
         setData(response.data.data);
         console.log(response.data.data[0]);
       } catch (error) {
-        // Handle error
         console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
+  }, [ticker, timeframe]);
 
-    // Cleanup function not needed in this case because there are no subscriptions or timers
-  }, []); // Fetch data when selectedParametro or selectedTimeframe changes */
+  const handleTickerChange = (e) => {
+    setTicker(e.target.value);
+  };
+
+  const handleTimeframeChange = (e) => {
+    setTimeframe(e.target.value);
+  };
+
+  const getRecommendations = () => {
+    if (lastRsi > 70) {
+      return "El activo está sobrecomprado. Podría ser un buen momento para vender.";
+    } else if (lastRsi < 30) {
+      return "El activo está sobrevendido. Podría ser un buen momento para comprar.";
+    } else {
+      return "El RSI está en una zona neutral.";
+    }
+  };
 
   return (
     <BaseLayout>
       <div className="flex flex-col">
-        <div className="grid grid-col-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3 h-max-full mb-8">
-          {lastClose && <CardUsageExample text={"Valor Actual"} number={lastClose.toFixed(2)} />}
-          {lastEma && <CardUsageExample text={"EMA200"} number={lastEma.toFixed(2)} arrow={lastEma < lastClose ? "↑" : "↓"} />}
-          {lastRsi && <CardUsageExample text={"RSI"} number={lastRsi.toFixed(2)} />}
-          <CardUsageExample text={"Ultima Semana"} number={percentageDifference.toFixed(2) + "%"} />
+        <div className="mb-4">
+          <label className="mr-2">Ticker:</label>
+          <input type="text" value={ticker} onChange={handleTickerChange} className="mr-4" />
+          <label className="mr-2">Timeframe:</label>
+          <select value={timeframe} onChange={handleTimeframeChange}>
+            <option value="1d">1 Day</option>
+            <option value="1h">1 Hour</option>
+            <option value="1wk">1 Week</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3 h-max-full mb-8">
+          {lastClose !== undefined && <CardUsageExample text={"Valor Actual"} number={lastClose.toFixed(2)} />}
+          {lastEma !== undefined && (
+            <CardUsageExample
+              text={"EMA200"}
+              number={lastEma.toFixed(2)}
+              arrow={lastEma < lastClose ? "↑" : "↓"}
+              showTooltip={true} // Aquí determinas si quieres mostrar el tooltip
+              tooltipText="Un valor superior a la EMA200 indica que el activo está en una tendencia alcista de largo plazo"
+            />
+          )}
+          {lastRsi !== undefined && (
+            <div>
+              <CardUsageExample
+                text={"RSI"}
+                number={lastRsi.toFixed(2)}
+                showTooltip={true} // Aquí determinas si quieres mostrar el tooltip
+                tooltipText="El RSI mide la fuerza relativa de las ganancias y pérdidas recientes para determinar si un activo está sobrecomprado o sobrevendido."
+              />
+            </div>
+          )}
+          {diferenciaEma !== undefined && (
+            <CardUsageExample text={"Diferencia EMA 21-9"} number={diferenciaEma.toFixed(2) + "%"} />
+          )}
+          {diferenciaHoy !== undefined && <CardUsageExample text={"Última Vela"} number={diferenciaHoy.toFixed(2) + "%"} />}
+          {diferenciaSemana !== undefined && <CardUsageExample text={"Ultimas 5 Velas"} number={diferenciaSemana.toFixed(2) + "%"} />}
         </div>
         <div className="w-full mx-auto flex justify-center items-center">
           {data.length > 0 ? (
-            // Render the tickers if the array is not empty
-            <Plot
-              className=""
-              data={[
-                {
-                  x: dates,
-                  close: close,
-                  decreasing: { line: { color: "red" } },
-                  high: high,
-                  increasing: { line: { color: "green" } },
-                  line: { color: "rgba(31,119,180,1)" },
-                  low: low,
-                  open: open,
-                  type: "candlestick",
-                  xaxis: "x",
-                  yaxis: "y",
-                },
-              ]}
-              layout={{
-                width: 800,
-                height: 600,
-                title: "GRAFICO AAPL",
-                xaxis: {
-                  title: "Fecha",
-                },
-                yaxis: {
-                  title: "Precio",
-                },
-                plot_bgcolor: "rgba(0,0,0,0.8)", // Dark background color
-                paper_bgcolor: "rgba(0,0,0,0.8)", // Dark background color
-                font: {
-                  color: "white", // Text color
-                },
-              }}
-            />
+            <div>
+              <Plot
+                className=""
+                data={[
+                  {
+                    x: dates,
+                    close: close,
+                    decreasing: { line: { color: "red" } },
+                    high: high,
+                    increasing: { line: { color: "green" } },
+                    line: { color: "rgba(31,119,180,1)" },
+                    low: low,
+                    open: open,
+                    type: "candlestick",
+                    xaxis: "x",
+                    yaxis: "y",
+                  },
+                ]}
+                layout={{
+                  width: 800,
+                  height: 600,
+                  title: `GRAFICO ${ticker.toUpperCase()}`,
+                  xaxis: {
+                    title: "Fecha",
+                  },
+                  yaxis: {
+                    title: "Precio",
+                  },
+                  plot_bgcolor: "rgba(0,0,0,0.8)",
+                  paper_bgcolor: "rgba(0,0,0,0.8)",
+                  font: {
+                    color: "white",
+                  },
+                }}
+              />
+              <div className="mt-4 p-4 bg-gray-800 text-white rounded">
+                <h2 className="text-lg font-bold">Recomendaciones</h2>
+                <p>{getRecommendations()}</p>
+              </div>
+            </div>
           ) : (
-            // Render a message if the array is empty
-            <p>No hay tickers</p>
+            <p>No hay datos disponibles</p>
           )}
         </div>
       </div>

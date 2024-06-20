@@ -2,6 +2,11 @@
 from api.views import CreateUserView
 from api.views import get_activo, get_fundamental_info
 from django.contrib import admin
+from backtesting import Strategy, Backtest
+from backtesting.lib import crossover
+import pandas as pd
+import pandas_ta as ta
+import yfinance as yf
 from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import path, include
@@ -23,5 +28,9 @@ urlpatterns = [
 
     path('api/get_correlation_matrix', views.get_correlation_matrix, name='get_correlation_matrix'),
     path('sharpe-ratio/', views.sharpe_ratio, name='sharpe_ratio'),
+    path('get_retornos_mensuales', views.get_retornos_mensuales, name='get_retornos_mensuales'),
+    path('run_backtest/', views.run_backtest, name='run_backtest'),
+    path('get_pivot_points/', views.get_pivot_points, name='get_pivot_points'),
+    
     
 ]

@@ -1,28 +1,30 @@
 import React from 'react';
-import { Card, Metric, Text } from '@tremor/react';
+import { Card } from '@tremor/react';
+import ReactTooltip from 'react-tooltip';
 
-export function CardUsageExample({ text, number, arrow }) {
-  // Determinar la clase de color del número según la dirección de la flecha
+export function CardUsageExample({ text, number, arrow, showTooltip, tooltipText }) {
   const numberColorClass = arrow === '↑' ? 'text-green-600' : arrow === '↓' ? 'text-red-600' : '';
-
-  // Determinar la clase de color de la flecha según la dirección
   const arrowColorClass = arrow === '↑' ? 'text-green-600' : arrow === '↓' ? 'text-red-600' : '';
 
+  const tooltipId = `tooltip-${text.replace(/\s+/g, '-')}`; // Generar un id único para el tooltip basado en el texto
+
   return (
-    <Card
-      className="mx-auto max-w-xs h-max"
-      decoration="top"
-      decorationColor="indigo"
-    >
+    <Card className="mx-auto max-w-xs h-max" decoration="top" decorationColor="indigo">
       <div className="flex justify-between items-center">
         <div>
           <p className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">{text}</p>
-          {/* Aplicar la clase de color condicional al número */}
           <p className={`text-3xl text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold ${numberColorClass}`}>{number}</p>
         </div>
-        {/* Renderizar la flecha con la clase de color condicional */}
         {arrow && <span className={`text-xl ${arrowColorClass}`}>{arrow}</span>}
+        {showTooltip && (
+          <span data-tip data-for={tooltipId} className="ml-2">
+            ℹ️
+          </span>
+        )}
       </div>
+      <ReactTooltip id={tooltipId} place="top" effect="solid">
+        {tooltipText}
+      </ReactTooltip>
     </Card>
   );
 }

@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import Visualizacion from "./pages/Visualizacion";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import axios from "axios";
@@ -22,7 +21,10 @@ import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from "@apo
 import AnalisisActivo from "./pages/AnalisisActivo";
 import Fundamental from "./pages/Fundamental";
 import SharpeRatioChart from "./pages/SharpeRatio";
-
+import Correlacion from "./pages/Correlacion";
+import RetornosMensuales from "./pages/RetornosMensuales"; 
+import Backtesting from "./pages/Backtesting"; 
+import SoportesResistencias from "./pages/SoportesResistencias";
 function Logout() {
   localStorage.clear();
   return <Navigate to="/login/" />;
@@ -89,10 +91,13 @@ function App() {
         <Route path="/login" element={<Login/>} />
         <Route path="/logout" element={<Logout/>} />
         <Route path="/register" element={<RegisterAndLogout />} />
-        <Route path="/visualizacion" element={<Visualizacion />} />
+        <Route path="/correlacion" element={<Correlacion />} />
         <Route path="/sharpeRatio" element={<SharpeRatioChart />} />
         <Route path="/fundamental" element={<Fundamental />} />
         <Route path="/analisisActivo" element={<AnalisisActivo />} />
+        <Route path="/retornosMensuales" element={<RetornosMensuales />} />
+        <Route path="/soportesResistencias" element={<SoportesResistencias />} />
+        <Route path="/backtesting" element={<Backtesting />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/*       <div>
