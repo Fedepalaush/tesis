@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BaseLayout from "../components/BaseLayout";
 import {Barchart} from "../components/Barchart"; // Importa Barchart según sea necesario
+import {tickersBM} from '../ticker'
 
 const Fundamental = () => {
   const [freeCashFlowData, setFreeCashFlowData] = useState([]);
@@ -10,6 +11,8 @@ const Fundamental = () => {
   const [totalAssets, setTotalAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ticker, setTicker] = useState("MSFT"); // Estado para almacenar el ticker seleccionado
+  const [tickers, setTickers] = useState(tickersBM);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,11 +55,6 @@ const Fundamental = () => {
     fetchData();
   }, [ticker]);
 
-  // Opciones de tickers disponibles
-  const tickerOptions = [
-    "AAPL", "MSFT", "TSLA", "AMZN", "GOOGL", "FB", "NFLX", "NVDA", "INTC", "AMD",
-    "PYPL", "CRM", "IBM", "CSCO", "QCOM", "GS", "JPM", "V", "DIS", "WMT"
-  ];
 
   // Función para manejar el cambio de ticker seleccionado
   const handleTickerChange = (event) => {
@@ -77,7 +75,7 @@ const Fundamental = () => {
                 onChange={handleTickerChange}
                 className="border rounded-md p-1"
               >
-                {tickerOptions.map((ticker) => (
+                {tickers.map((ticker) => (
                   <option key={ticker} value={ticker}>{ticker}</option>
                 ))}
               </select>

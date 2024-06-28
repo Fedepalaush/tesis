@@ -110,15 +110,15 @@ function Backtest() {
         <form className="mb-4">
           <div className="mb-2">
             <label className="text-white">Ticker:</label>
-            <input type="text" name="ticker" value={formData.ticker} onChange={handleChange} className="ml-2 p-1" />
+            <input type="text" name="ticker" value={formData.ticker} onChange={handleChange} className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"/>
           </div>
           <div className="mb-2">
             <label className="text-white">Inicio:</label>
-            <input type="date" name="inicio" value={formData.inicio} onChange={handleChange} className="ml-2 p-1" />
+            <input type="date" name="inicio" value={formData.inicio} onChange={handleChange} className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"/>
           </div>
           <div className="mb-2">
             <label className="text-white">Fin:</label>
-            <input type="date" name="fin" value={formData.fin} onChange={handleChange} className="ml-2 p-1" />
+            <input type="date" name="fin" value={formData.fin} onChange={handleChange} className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"/>
           </div>
           <div className="mb-2">
             <label className="text-white">TP %:</label>
@@ -128,7 +128,7 @@ function Backtest() {
               name="tp_percentage"
               value={formData.tp_percentage}
               onChange={handleChange}
-              className="ml-2 p-1"
+              className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"
             />
           </div>
           <div className="mb-2">
@@ -139,7 +139,7 @@ function Backtest() {
               name="sl_percentage"
               value={formData.sl_percentage}
               onChange={handleChange}
-              className="ml-2 p-1"
+              className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"
             />
           </div>
           <div className="mb-2">
@@ -149,11 +149,11 @@ function Backtest() {
               <>
                 <div className="mb-2">
                   <label className="text-white">Rápida:</label>
-                  <input type="number" name="rapida" value={formData.rapida} onChange={handleChange} className="ml-2 p-1" />
+                  <input type="number" name="rapida" value={formData.rapida} onChange={handleChange} className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600" />
                 </div>
                 <div className="mb-2">
                   <label className="text-white">Lenta:</label>
-                  <input type="number" name="lenta" value={formData.lenta} onChange={handleChange} className="ml-2 p-1" />
+                  <input type="number" name="lenta" value={formData.lenta} onChange={handleChange} className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600" />
                 </div>
               </>
             )}
@@ -170,7 +170,7 @@ function Backtest() {
                     name="overboughtLevel"
                     value={formData.strategies.rsiParams.overboughtLevel}
                     onChange={handleChange}
-                    className="ml-2 p-1"
+                    className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"
                   />
                 </div>
                 <div className="mb-2">
@@ -180,7 +180,7 @@ function Backtest() {
                     name="oversoldLevel"
                     value={formData.strategies.rsiParams.oversoldLevel}
                     onChange={handleChange}
-                    className="ml-2 p-1"
+                    className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"
                   />
                 </div>
               </>

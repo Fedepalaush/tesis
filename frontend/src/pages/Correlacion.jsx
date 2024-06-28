@@ -5,17 +5,15 @@ import NavbarComp from '../components/NavbarComp';
 import Sidebar from '../components/SidebarComp';
 import { SidebarItem } from '../components/SidebarComp';
 import { LayoutDashboard, BarChart3, UserCircle, Boxes, Package, Receipt, Settings, LifeBuoy } from 'lucide-react';
+import {tickersBM} from '../ticker'
 
-const tickersList = [
-  "AAPL", "MSFT", "TSLA", "GOOGL", "AMZN", "META", "NVDA", "NFLX", "BABA", "V",
-  "JPM", "JNJ", "WMT", "PG", "MA", "DIS", "PYPL", "UNH", "HD", "VZ"
-];
 
 const Correlacion = () => {
   const [correlationMatrix, setCorrelationMatrix] = useState(null);
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [tickers, setTickers] = useState(tickersBM);
+  
   const handleTickerChange = (event) => {
     const value = event.target.value;
     if (!selectedTickers.includes(value) && value) {
@@ -68,7 +66,7 @@ const Correlacion = () => {
               <div className="mb-4">
                 <select onChange={handleTickerChange} className="p-2 bg-gray-800 text-white rounded">
                   <option value="">Selecciona un ticker</option>
-                  {tickersList.filter(ticker => !selectedTickers.includes(ticker)).map(ticker => (
+                  {tickers.filter(ticker => !selectedTickers.includes(ticker)).map(ticker => (
                     <option key={ticker} value={ticker}>{ticker}</option>
                   ))}
                 </select>

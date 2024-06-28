@@ -24,6 +24,22 @@ from backtesting.lib import crossover
 from django.http import JsonResponse
 import json
 
+def check_ema_trend(historical_data):
+    print(historical_data)
+    last3_ema9 = historical_data['EMA9'].tail(3).values
+    last3_ema21 = historical_data['EMA21'].tail(3).values
+
+    is_approaching_from_below = all(last3_ema9[i] < last3_ema21[i] for i in range(3))
+    is_approaching_from_above = all(last3_ema9[i] > last3_ema21[i] for i in range(3))
+
+    if is_approaching_from_below:
+        return 1
+    elif is_approaching_from_above:
+        return 2
+    else:
+        return 0
+
+
 @csrf_exempt
 def get_activo(request):
     if request.method == 'GET':
@@ -36,10 +52,10 @@ def get_activo(request):
                     period = '1y'
                     date_format = '%Y-%m-%d'
                 elif interval == '1h':
-                    period = '1mo'
+                    period = '1y'
                     date_format = '%Y-%m-%d %H:%M'
                 elif interval == '1wk':
-                    period = '3y'
+                    period = '5y'
                     date_format = '%Y-%m-%d'
                 else:
                     return JsonResponse({'error': 'Invalid interval.'}, status=400)
@@ -51,9 +67,12 @@ def get_activo(request):
                 historical_data['EMA200'] = ta.ema(historical_data.Close, length=200)
                 historical_data['EMA9'] = ta.ema(historical_data.Close, length=9)
                 historical_data['EMA21'] = ta.ema(historical_data.Close, length=21)
+                
                 historical_data.dropna(inplace=True)
                 
-                print(historical_data)
+                # Check EMA trend for the last 3 values
+                tendencia219 = check_ema_trend(historical_data)
+                
                 
                 data = []
                 for date, row in historical_data.iterrows():
@@ -72,6 +91,7 @@ def get_activo(request):
                         'ema_200': row['EMA200'],
                         'ema_21': row['EMA21'],
                         'ema_9': row['EMA9'],
+                        'tendencia219': tendencia219  # Use the trend value computed once
                     })
             
                 return JsonResponse({'data': data})
@@ -281,18 +301,45 @@ def get_correlation_matrix(request):
     
 
 def sharpe_ratio(request):
-    # Tu lógica para calcular el Sharpe ratio
-    # Esto incluiría la obtención de datos, cálculos y preparación de los datos para pasar al template
+    if request.method == 'GET':
+        sector = request.GET.get('sector', 'Information Technology')  # Default to 'Information Technology' if no sector is provided
 
-    # Ejemplo básico de datos de prueba
-    sharpe_data = [
-        {'ticker': 'MSFT', 'sharpe_2Y': 1.5, 'sharpe_5Y': 2.0},
-        {'ticker': 'AAPL', 'sharpe_2Y': 1.8, 'sharpe_5Y': 2.2},
-        # Más datos aquí...
-    ]
+        tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][['Symbol', 'GICS Sector', 'GICS Sub-Industry']]
 
-    # Devolver los datos como una respuesta JSON
-    return JsonResponse({'sharpe_data': sharpe_data})
+        # Agrupar por sector e industria
+        sector_tickers = {}
+        sectors = tickers.groupby('GICS Sector')
+
+        for sector_name, group in sectors:
+            sector_tickers[sector_name] = list(group['Symbol'])
+
+        # Filtrar los tickers según la categoría de interés
+        selected_sector_tickers = [ticker.replace(".", "-") for ticker in sector_tickers.get(sector, [])]
+
+        if not selected_sector_tickers:
+            return JsonResponse({'error': 'Invalid sector provided'}, status=400)
+
+        # Obtener precios de cierre
+        start = '2015-01-01'
+        end = '2023-07-01'
+        sp500_fin = pd.DataFrame(yf.download(selected_sector_tickers + ['^GSPC'], start, end)['Close']).dropna(axis=1)
+        returns = sp500_fin.pct_change()[1:]
+
+        # Calcular Sharpe ratios
+        sharpe_1y = (returns.iloc[-252:,:].mean()/returns.iloc[-252,:].std())
+        sharpe_2y = (returns.iloc[-252*2:,:].mean()/returns.iloc[-252*2,:].std())
+        sharpe_5y = (returns.iloc[-252*5:,:].mean()/returns.iloc[-252*5,:].std())
+
+        sharpe_df = pd.DataFrame({'Sharpe 1Y': sharpe_1y,
+                                  'Sharpe 2Y': sharpe_2y,
+                                  'Sharpe 5Y': sharpe_5y})
+
+        # Preparar los datos para enviar como JSON
+        sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'Ticker'}).to_dict(orient='records')
+
+        return JsonResponse({'sharpe_data': sharpe_data})
+
+    return JsonResponse({'error': 'GET method required'})
 
 class CustomStrategy(Strategy):
     rapida = 10
@@ -454,7 +501,7 @@ def get_pivot_points(request):
         elif x['pivot'] == 2:
             return x['high'] + 1e-3
         else:
-            return np.nan
+            return None
 
     # Aplicar la función pointpos para calcular 'pointpos' y agregarlo como columna
     df['pointpos'] = df.apply(lambda row: pointpos(row), axis=1)
@@ -466,33 +513,58 @@ def get_pivot_points(request):
     pivot_points = dfpl.dropna(subset=['pointpos'])
 
     # Lista para almacenar los datos de los puntos pivote y líneas trazadas
-    data_to_send = []
+    data = []
+
+    # Lista para almacenar los datos históricos
+    historical = []
 
     # Calcular límites para las líneas trazadas
     limites = (dfpl['pointpos'].max() - dfpl['pointpos'].min()) / dfpl['pointpos'].count()
 
-    # Recorrer cada punto pivote para verificar la condición y añadir datos a data_to_send
+    # Recorrer cada punto pivote para verificar la condición y añadir datos a data y historical
     for i in range(len(pivot_points)):
         for j in range(i + 1, len(pivot_points)):
             if (pivot_points.iloc[i]['pointpos'] > pivot_points.iloc[i]['high'] and
                 pivot_points.iloc[j]['pointpos'] > pivot_points.iloc[j]['high'] and
                 abs(pivot_points.iloc[i]['pointpos'] - pivot_points.iloc[j]['pointpos']) < limites):
                 
-                data_to_send.append({
+                data.append({
                     'time': pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'pointpos': pivot_points.iloc[i]['pointpos'],
+                    'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
                     'type': 'high'
+                })
+                
+                # Añadir datos históricos correspondientes
+                formatted_date = pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S')
+                row = df[df['time'] == pivot_points.iloc[i]['time']].iloc[0]
+                historical.append({
+                    'date': formatted_date,
+                    'open_price': row['open'],
+                    'high_price': row['high'],
+                    'low_price': row['low'],
+                    'close_price': row['close'],
                 })
             
             elif (pivot_points.iloc[i]['pointpos'] < pivot_points.iloc[i]['low'] and
                   pivot_points.iloc[j]['pointpos'] < pivot_points.iloc[j]['low'] and
                   abs(pivot_points.iloc[i]['pointpos'] - pivot_points.iloc[j]['pointpos']) < limites):
                 
-                data_to_send.append({
+                data.append({
                     'time': pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'pointpos': pivot_points.iloc[i]['pointpos'],
+                    'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
                     'type': 'low'
+                })
+                
+                # Añadir datos históricos correspondientes
+                formatted_date = pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S')
+                row = df[df['time'] == pivot_points.iloc[i]['time']].iloc[0]
+                historical.append({
+                    'date': formatted_date,
+                    'open_price': row['open'],
+                    'high_price': row['high'],
+                    'low_price': row['low'],
+                    'close_price': row['close'],
                 })
 
     # Devolver los datos como respuesta JSON
-    return JsonResponse(data_to_send, safe=False)
+    return JsonResponse({'data': data, 'historical': historical, 'limites':limites}, safe=False)

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import BaseLayout from '../components/BaseLayout';
+import {tickersBM} from '../ticker'
 
 const MonthlyReturnsChart = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicker, setSelectedTicker] = useState('AAPL');
-  const activos = ['AAPL', 'MSFT', 'KO'];
+  const [tickers, setTickers] = useState(tickersBM);
 
   useEffect(() => {
     fetch(`http://localhost:8000/get_retornos_mensuales?ticker=${selectedTicker}`)
@@ -25,6 +26,7 @@ const MonthlyReturnsChart = () => {
         setLoading(false);
       });
   }, [selectedTicker]);
+
 
   const handleTickerChange = (event) => {
     setSelectedTicker(event.target.value);
@@ -55,7 +57,7 @@ const MonthlyReturnsChart = () => {
             onChange={handleTickerChange}
             className="bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:outline-none focus:border-blue-500"
           >
-            {activos.map(activo => (
+            {tickers.map(activo => (
               <option key={activo} value={activo}>{activo}</option>
             ))}
           </select>
@@ -72,9 +74,9 @@ const MonthlyReturnsChart = () => {
                 type: 'heatmap',
                 hoverongaps: false,
                 colorscale: [
-                  [0, 'rgb(0,128,0)'],     // Verde más fuerte
+                  [0, 'rgb(255,0,0)'],     // Verde más fuerte
                   [0.5, 'rgb(255,255,150)'], // Amarillo
-                  [1, 'rgb(255,0,0)']       // Rojo más fuerte
+                  [1, 'rgb(0,128,0)']       // Rojo más fuerte
                 ],
                 zmin: minReturn,
                 zmax: maxReturn,
