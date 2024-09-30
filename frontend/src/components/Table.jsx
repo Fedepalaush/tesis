@@ -5,6 +5,34 @@ import { Card, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow
 export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
   const totalSum = data.reduce((acc, item) => acc + item.precioCompra * item.cantidad, 0).toFixed(2);
 
+  // Recolectar todas las recomendaciones en un array con las nuevas reglas
+  const recomendaciones = data.map(item => {
+    if (item.recomendacion) {
+      const { resultadoTriple, rsi } = item.recomendacion;
+      let recomendacionText = '';
+
+      // Evaluar resultadoTriple
+      if (resultadoTriple === 1) {
+        recomendacionText += "El triple cruce de medias dio una señal de compra a corto plazo.";
+      } else if (resultadoTriple === 2) {
+        recomendacionText += "El triple cruce de medias dio una señal de venta a corto plazo.";
+      }
+
+      // Evaluar RSI
+      if (rsi <= 30) {
+        recomendacionText += " Está en zona de sobreventa, es buen momento para comprar.";
+      } else if (rsi >= 70) {
+        recomendacionText += " Está en zona de sobrecompra, es buen momento para vender.";
+      }
+
+      // Solo incluir el ticker si hay recomendaciones válidas
+      if (recomendacionText) {
+        return `${item.ticker}: ${recomendacionText.trim()}`;
+      }
+    }
+    return null;
+  }).filter(recomendacion => recomendacion !== null);
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
@@ -32,7 +60,7 @@ export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
               <TableCell>{item.ticker}</TableCell>
               <TableCell>{item.cantidad}</TableCell>
               <TableCell>{`$${item.precioCompra.toFixed(2)}`}</TableCell>
-              <TableCell>{`$${item.precioActual}`}</TableCell>
+              <TableCell>{`$${item.precioActual.toFixed(2)}`}</TableCell>
               <TableCell style={{ color: (item.precioActual - item.precioCompra) / item.precioCompra >= 0 ? "green" : "red" }}>
                 {(((item.precioActual - item.precioCompra) / item.precioCompra) * 100).toFixed(2)}%
               </TableCell>
@@ -55,7 +83,18 @@ export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
           <TableRow>
             <TableCell colSpan={6}></TableCell>
             <TableCell>{`$${totalSum}`}</TableCell>
-            <TableCell></TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell colSpan={8}>
+              <div>
+                <strong>Recomendaciones:</strong>
+                <ul style={{ listStyleType: "disc", paddingLeft: "20px" }}>
+                  {recomendaciones.map((recomendacion, index) => (
+                    <li key={index}>{recomendacion}</li>
+                  ))}
+                </ul>
+              </div>
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>

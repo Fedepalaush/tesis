@@ -29,7 +29,14 @@ export default function Sidebar({ children }) {
           <ul className="flex-1 px-3">
             <SidebarItem icon={<LayoutDashboard size={20} />} text="Portfolio" href="/" />
             <SidebarItem icon={<CandlestickChart />} text="Análisis Activo" href="/analisisActivo" />
-            <SidebarItem icon={<BrainCircuit />} text="ML" href="/ml" />
+            <SidebarDropdown 
+            icon={<BrainCircuit />} 
+            text="ML" href="/ml" 
+            items={[
+              { text: "KMeans", href: "/agrupamiento" },
+
+            ]}
+            />
             <SidebarDropdown
               icon={<BarChart3 />}
               text="Visualizacion"

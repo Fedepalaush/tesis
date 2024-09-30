@@ -3,10 +3,11 @@ import api from "../api";
 import Modal from "../components/Modal";
 import { CardUsageExample } from "../components/Card";
 import { TableUsageExample } from "../components/Table";
-import { DonutChartUsageExampleWithCustomColors } from "../components/DonutChart";
+import DonutChart from "../components/DonutChart";
 import { Button } from "@tremor/react";
 import Sidebar, { SidebarItem } from "../components/SidebarComp";
 import { LayoutDashboard, BarChart3 } from "lucide-react";
+import {tickersBM} from '../ticker'
 
 function Home() {
   const [tickers, setTickers] = useState([]);
@@ -15,6 +16,7 @@ function Home() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [cantidad, setCantidad] = useState("");
   const [total, setTotal] = useState("");
+  const tickersDrop = tickersBM;
 
   useEffect(() => {
     getActivos();
@@ -85,7 +87,7 @@ function Home() {
           </aside>
           {/* Contenido principal */}
           <div className="w-screen pl-10">
-            <div className=" grid grid-cols-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3 h-max-full">
+            <div className="grid grid-cols-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3 h-max-full">
               <CardUsageExample text="Inversión Inicial" number={`$${total}`} />
               <CardUsageExample text="Inversión Actual" number={`$${invActual}`} />
               <CardUsageExample text="Diferencia" number={`${diferencia}%`} />
@@ -99,12 +101,16 @@ function Home() {
                     <div className="mx-auto my-4 w-48">
                       <h3 className="text-lg font-black text-gray-800">Comprar</h3>
                       <div className="space-y-3">
-                        <input
-                          type="text"
-                          placeholder="Ticker"
-                          value={tickerToBuy}
-                          onChange={(e) => setTickerToBuy(e.target.value)}
-                        />
+                        <select value={tickerToBuy} onChange={(e) => setTickerToBuy(e.target.value)}>
+                          <option value="" disabled>
+                            Selecciona un Ticker
+                          </option>
+                          {tickersDrop.map((ticker) => (
+                            <option key={ticker} value={ticker}>
+                              {ticker}
+                            </option>
+                          ))}
+                        </select>
                         <input
                           type="number"
                           placeholder="Precio"
@@ -131,8 +137,8 @@ function Home() {
                 </Modal>
               )}
             </div>
-            <div className="mt-4">
-              <DonutChartUsageExampleWithCustomColors />
+            <div className="mt-4 px-14 w-full md:w-1/2">
+            <DonutChart data={tickers} />
             </div>
           </div>
         </div>

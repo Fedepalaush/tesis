@@ -19,13 +19,17 @@ import pandas as pd
 from datetime import datetime
 from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
+from datetime import datetime, timedelta
+from .logica.agrupacion import agrupar_acciones
+from rest_framework.decorators import api_view
+from api.models import StockData
+from django.db.models import Q
 
 
 from django.http import JsonResponse
 import json
 
 def check_ema_trend(historical_data):
-    print(historical_data)
     last3_ema9 = historical_data['EMA9'].tail(3).values
     last3_ema21 = historical_data['EMA21'].tail(3).values
 
@@ -39,47 +43,187 @@ def check_ema_trend(historical_data):
     else:
         return 0
 
+def calculate_score(data):
+    # Calcular las medias móviles
+    data['SMA_50'] = data['Close'].rolling(window=50).mean()
+    data['SMA_200'] = data['Close'].rolling(window=200).mean()
+    data['EMA_9'] = data['Close'].ewm(span=9, adjust=False).mean()
+    data['EMA_21'] = data['Close'].ewm(span=21, adjust=False).mean()
+    data['EMA_12'] = data['Close'].ewm(span=12, adjust=False).mean()
+    data['EMA_26'] = data['Close'].ewm(span=26, adjust=False).mean()
+
+    # Señales de cruce
+    data['Golden_Cross'] = np.where((data['SMA_50'] > data['SMA_200']), 1, 0)
+    data['Death_Cross'] = np.where((data['SMA_50'] < data['SMA_200']), -1, 0)
+    data['Cross_9_21'] = np.where((data['EMA_9'] > data['EMA_21']), 1, -1)
+    data['Cross_12_26'] = np.where((data['EMA_12'] > data['EMA_26']), 1, -1)
+
+    # Ponderaciones
+    golden_death_weight = 0.5
+    cross_9_21_weight = 0.25
+    cross_12_26_weight = 0.25
+
+    # Calcular el puntaje total
+    data['Score'] = (golden_death_weight * (data['Golden_Cross'] + data['Death_Cross']) +
+                     cross_9_21_weight * data['Cross_9_21'] +
+                     cross_12_26_weight * data['Cross_12_26'])
+
+    # Normalizar el puntaje a un rango de 0 a 100
+    data['Score'] = ((data['Score'] + 1) / 2) * 100
+
+    # Devolver el puntaje más reciente
+    return data['Score'].iloc[-1] if not data.empty else None
+
+def calculate_signal(data, short_span, long_span, days_to_consider):
+
+    # Calcular las medias móviles
+    short_ema_col = f'EMA_{short_span}'
+    long_ema_col = f'EMA_{long_span}'
+    
+    data[short_ema_col] = data['Close'].ewm(span=short_span, adjust=False).mean()
+    data[long_ema_col] = data['Close'].ewm(span=long_span, adjust=False).mean()
+
+    # Señales de cruce
+    data['Cross'] = np.where(data[short_ema_col] > data[long_ema_col], 1, -1)
+    
+    # Señal de cruce en los días recientes según lo indicado
+    data['Signal'] = data['Cross'].diff()
+
+    # Obtener las señales de los días más recientes
+    recent_signals = data['Signal'].tail(days_to_consider)
+
+
+    # Verificar si contiene tanto un cruce al alza como a la baja
+    contains_upward_cross = (recent_signals == 2).any()
+    contains_downward_cross = (recent_signals == -2).any()
+
+    # Si hay ambos cruces (al alza y a la baja), devolver 0 (neutral)
+    if contains_upward_cross and contains_downward_cross:
+        return 0  # Neutral (ambos cruces presentes)
+    # Si hay solo cruce al alza
+    elif contains_upward_cross:
+        return 1  # Señal verde (cruce al alza)
+    # Si hay solo cruce a la baja
+    elif contains_downward_cross:
+        return -1  # Señal roja (cruce a la baja)
+    else:
+        return 0  # Neutral (sin cruce)
+    
+def detectar_cruce(ema4_prev, ema9_prev, ema18_prev, ema4_curr, ema9_curr, ema18_curr):
+    # Detectar cruce al alza
+    if ema4_prev <= ema9_prev and ema4_prev <= ema18_prev and ema4_curr > ema9_curr and ema4_curr > ema18_curr:
+        return 1  # Cruce al alza de EMA4 a EMA9 y EMA18
+    # Detectar cruce a la baja
+    elif ema4_prev >= ema9_prev and ema4_prev >= ema18_prev and ema4_curr < ema9_curr:
+        return 2  # Cruce a la baja de EMA4 a EMA9
+    return 0  # No hay cruce significativo
+    
+def evaluar_cruce(triple):
+    tiene_uno = False
+    tiene_dos = False
+
+    for item in triple:
+        valor = item.get('Cruce')
+        if valor == 1:
+            tiene_uno = True
+        elif valor == 2:
+            tiene_dos = True
+
+    if tiene_dos and not tiene_uno:
+        return 2
+    elif tiene_uno:
+        return 1
+    else:
+        return 0 
+
+    
+def calculate_triple_ema(data):
+    # Calcular las medias móviles
+    data['EMA_4'] = ta.ema(data['Close'], length=4)
+    data['EMA_9'] = ta.ema(data['Close'], length=9)
+    data['EMA_18'] = ta.ema(data['Close'], length=18)
+
+    # Aplica la función detectar_cruce para cada fila del DataFrame, comparando con la fila anterior
+    data['Cruce'] = data.apply(lambda row: detectar_cruce(
+        data['EMA_4'].shift(1)[row.name], data['EMA_9'].shift(1)[row.name], data['EMA_18'].shift(1)[row.name],
+        row['EMA_4'], row['EMA_9'], row['EMA_18']), axis=1)
+    
+    # Retorna un diccionario con las fechas y los valores de cruce
+    result = data[['Cruce']].tail(5).to_dict(orient='records')
+    return result
+
 
 @csrf_exempt
 def get_activo(request):
     if request.method == 'GET':
         ticker = request.GET.get('ticker', None)
-        interval = request.GET.get('timeframe', None)
         
-        if ticker:
-            if interval:
-                if interval == '1d':
-                    period = '1y'
-                    date_format = '%Y-%m-%d'
-                elif interval == '1h':
-                    period = '1y'
-                    date_format = '%Y-%m-%d %H:%M'
-                elif interval == '1wk':
-                    period = '5y'
-                    date_format = '%Y-%m-%d'
-                else:
-                    return JsonResponse({'error': 'Invalid interval.'}, status=400)
+        # Default date range: one year ago to today
+        default_end_date = datetime.today()
+        default_start_date = default_end_date - timedelta(days=365)
 
-                historical_data = yf.Ticker(ticker).history(period=period, interval=interval)
+        start_date_str = request.GET.get('start_date', default_start_date.strftime('%Y-%m-%d'))
+        end_date_str = request.GET.get('end_date', default_end_date.strftime('%Y-%m-%d'))
+        
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+            # Check if the date range is at least 365 days
+            if (end_date - start_date).days < 365:
+                return JsonResponse({'error': 'Debe tener al menos 365 dias'}, status=400)
+
+        except ValueError:
+            return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+        print('Entrando')
+        if ticker:
+            try:
+        # Obtener los datos históricos desde la base de datos
+                historical_data = StockData.objects.filter(
+                    ticker=ticker,
+                    date__range=(start_date, end_date)
+                ).order_by('date')
+
+                # Convertir el queryset a un DataFrame de Pandas
+                df = pd.DataFrame.from_records(historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
+
+                # Cambiar los nombres de las columnas a los esperados para ta-lib
+                df.rename(columns={
+                    'date': 'Date',
+                    'open_price': 'Open',
+                    'high_price': 'High',
+                    'low_price': 'Low',
+                    'close_price': 'Close',
+                    'volume': 'Volume'
+                }, inplace=True)
                 
-                # Calculate technical indicators
-                historical_data['RSI'] = ta.rsi(historical_data.Close, length=14)
-                historical_data['EMA200'] = ta.ema(historical_data.Close, length=200)
-                historical_data['EMA9'] = ta.ema(historical_data.Close, length=9)
-                historical_data['EMA21'] = ta.ema(historical_data.Close, length=21)
-                
-                historical_data.dropna(inplace=True)
-                
+                # Convertir la columna 'Date' a índice si lo prefieres
+                df.set_index('Date', inplace=True)
+                print(df)
+                # Calcular los indicadores técnicos usando talib
+                print('ok')
+                df['RSI'] = ta.rsi(df['Close'], length=14)
+                df['EMA200'] = ta.ema(df['Close'], length=200)
+                df['EMA9'] = ta.ema(df['Close'], length=9)
+                df['EMA21'] = ta.ema(df['Close'], length=21)
+                df['EMA50'] = ta.ema(df['Close'], length=50)  # Cambié de 40 a 50 ya que EMA40 no es común
+                df['EMA4'] = ta.ema(df['Close'], length=4)
+                df['EMA18'] = ta.ema(df['Close'], length=18)
+                print(df)
+                df.dropna(inplace=True)
+                print(df)
                 # Check EMA trend for the last 3 values
-                tendencia219 = check_ema_trend(historical_data)
+                tendencia219 = check_ema_trend(df)
+                emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
+                emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
+                emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
+                tripleEma = calculate_triple_ema(df)
                 
-                
+                scoreEma = calculate_score(df)
                 data = []
-                for date, row in historical_data.iterrows():
-                    if interval == '1h':
-                        formatted_date = date.strftime(date_format)
-                    else:
-                        formatted_date = date.strftime(date_format.split()[0])
+                date_format = '%Y-%m-%d'
+                for date, row in df.iterrows():
+                    formatted_date = date.strftime(date_format)
                     
                     data.append({
                         'date': formatted_date,
@@ -91,17 +235,21 @@ def get_activo(request):
                         'ema_200': row['EMA200'],
                         'ema_21': row['EMA21'],
                         'ema_9': row['EMA9'],
-                        'tendencia219': tendencia219  # Use the trend value computed once
+                        'tendencia219': tendencia219,  # Use the trend value computed once
+                        'scoreEma': scoreEma,
+                        'emaRapidaSemaforo': emaRapidaSemaforo,
+                        'emaMediaSemaforo': emaMediaSemaforo,
+                        'emaLentaSemaforo': emaLentaSemaforo,
+                        'tripleEma': tripleEma,
                     })
             
                 return JsonResponse({'data': data})
-            else:
-                return JsonResponse({'error': 'Parameter "timeframe" is required.'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
         else:
             return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
     else:
         return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
-
 
 
 
@@ -110,18 +258,34 @@ def get_retornos_mensuales(request):
     if request.method == 'GET':
         try:
             ticker = request.GET.get('ticker', 'AAPL')  # Obtener el ticker de los parámetros de la solicitud
-            data = yf.download(ticker, period="10y", interval="1d")
+            years = int(request.GET.get('years', 10))  # Obtener los años de los parámetros, valor por defecto 10
+
+            # Filtrar los datos desde la base de datos para los últimos 'years' años
+            stock_data = StockData.objects.filter(
+                ticker=ticker,
+                date__gte=pd.Timestamp.now() - pd.DateOffset(years=years)
+            ).values('date', 'close_price').order_by('date')
+
+            # Convertir los datos a un DataFrame
+            df = pd.DataFrame(list(stock_data))
+
+            if df.empty:
+                return JsonResponse({'error': 'No data found for the provided ticker'}, status=400)
+
+            # Convertir la columna 'date' a datetime y establecerla como índice
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
 
             # Calcular los retornos mensuales
-            data['Month'] = data.index.to_period('M')
-            monthly_returns = data['Adj Close'].resample('M').ffill().pct_change()
+            df['Month'] = df.index.to_period('M')
+            monthly_returns = df['close_price'].resample('M').ffill().pct_change()
 
             # Crear una tabla pivot para los retornos mensuales
             monthly_returns = monthly_returns.to_frame().reset_index()
-            monthly_returns['Year'] = monthly_returns['Date'].dt.year
-            monthly_returns['Month'] = monthly_returns['Date'].dt.month
+            monthly_returns['Year'] = monthly_returns['date'].dt.year
+            monthly_returns['Month'] = monthly_returns['date'].dt.month
 
-            pivot_table = monthly_returns.pivot_table(values='Adj Close', index='Year', columns='Month')
+            pivot_table = monthly_returns.pivot_table(values='close_price', index='Year', columns='Month')
 
             # Convertir la tabla pivot a un formato adecuado para Plotly
             data_for_plotly = []
@@ -133,7 +297,7 @@ def get_retornos_mensuales(request):
                         'month': month,
                         'return': value if pd.notna(value) else None
                     })
-            
+
             return JsonResponse({'data': data_for_plotly})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -174,11 +338,17 @@ def get_fundamental_info(request):
             balance_json = balance.to_json(date_format='iso') if not balance.empty else None
             income_json = income.to_json(date_format='iso') if not income.empty else None
 
+            # Extraer deuda a largo y corto plazo
+            long_term_debt = balance.get('LongTermDebt').values[0] if 'LongTermDebt' in balance.columns else 0
+            current_debt = balance.get('CurrentDebt').values[0] if 'CurrentDebt' in balance.columns else 0
+
             # Datos fundamentales para incluir en la respuesta
             fundamental_data = {
                 'cash_flow': cashflows_json,
                 'balance': balance_json,
-                'income': income_json
+                'income': income_json,
+                'long_term_debt': long_term_debt,
+                'current_debt': current_debt
             }
 
             return JsonResponse({'data': fundamental_data})
@@ -188,7 +358,6 @@ def get_fundamental_info(request):
     
     else:
         return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
-    
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -212,11 +381,26 @@ class ActivoListCreate(generics.ListCreateAPIView):
         # Obtener todos los activos del usuario
         activos = Activo.objects.filter(usuario=user)
 
-        # Actualizar el precio actual de cada activo
         for activo in activos:
-            symbol = activo.ticker  # Asumiendo que hay un campo 'symbol' en tu modelo Activo
-            precio_actual = self.get_precio_actual(symbol)
-            activo.precioActual = precio_actual
+        # Obtener el histórico de precios de cierre
+            data = yf.Ticker(activo.ticker).history(period='1y')
+            triple = calculate_triple_ema(data)
+            resultadoTriple = evaluar_cruce(triple)
+            rsi = ta.rsi(data['Close'], timeperiod=14).iloc[-1]
+            
+            # Asignar el precio actual y la recomendación basada en el RSI y resultadoTriple
+            activo.precioActual = data['Close'].iloc[-1]
+            
+            # Crear el diccionario con resultadoTriple y rsi
+            recomendacion_dict = {
+                "resultadoTriple": resultadoTriple,
+                "rsi": rsi
+            }
+            
+            # Convertir el diccionario a JSON y asignarlo a recomendacion
+            activo.recomendacion = json.dumps(recomendacion_dict)
+            
+            # Guardar los cambios en el objeto
             activo.save()
 
         return activos
@@ -262,25 +446,20 @@ class ActivoDelete(generics.DestroyAPIView):
 def get_correlation_matrix(request):
     if request.method == 'GET':
         tickers = request.GET.getlist('tickers')
-        interval = request.GET.get('timeframe', '1d')  # Default to '1d' if not provided
-
-        if interval not in ['1d', '1wk', '1mo']:
-            return JsonResponse({'error': 'Invalid interval.'}, status=400)
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
 
         if not tickers:
             return JsonResponse({'error': 'Tickers are required.'}, status=400)
-
-        # Define the period based on the interval
-        if interval == '1d':
-            period = '1y'
-        elif interval == '1wk':
-            period = '3y'
-        elif interval == '1mo':
-            period = '10y'
         
+        if not start_date or not end_date:
+            return JsonResponse({'error': 'Start and end dates are required.'}, status=400)
+
         data_frames = {}
         for ticker in tickers:
-            ticker_data = yf.Ticker(ticker).history(period=period, interval=interval)
+            # Obtener los datos basados en las fechas proporcionadas
+            ticker_data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+            print(ticker_data)
             data_frames[ticker] = ticker_data['Close']
         
         # Combine the close prices into a single DataFrame
@@ -298,44 +477,58 @@ def get_correlation_matrix(request):
         return JsonResponse({'correlation_matrix': correlation_data})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
-    
 
 def sharpe_ratio(request):
     if request.method == 'GET':
-        sector = request.GET.get('sector', 'Information Technology')  # Default to 'Information Technology' if no sector is provided
+        sector = request.GET.get('sector', 'Information Technology')
+        x_years = int(request.GET.get('x_years', 5))
+        y_years = int(request.GET.get('y_years', 2))
+        print(sector.lower())
+        # Obtener tickers dependiendo del sector o todos los tickers si sector es 'todos'
+        if sector.lower() == 'todos':
+            # Obtener todos los tickers de la base de datos
+            sector_tickers = list(StockData.objects.values_list('ticker', flat=True).distinct())
+        else:
+            # Obtener tickers del sector específico desde Wikipedia
+            tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][['Symbol', 'GICS Sector', 'GICS Sub-Industry']]
+            sector_tickers = tickers[tickers['GICS Sector'] == sector]['Symbol'].tolist()
+            sector_tickers = [ticker.replace(".", "-") for ticker in sector_tickers]
+            print(sector_tickers)
 
-        tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][['Symbol', 'GICS Sector', 'GICS Sub-Industry']]
+        # Si no hay tickers encontrados, retornar error
+        if not sector_tickers:
+            return JsonResponse({'error': 'Invalid sector or no tickers found'}, status=400)
 
-        # Agrupar por sector e industria
-        sector_tickers = {}
-        sectors = tickers.groupby('GICS Sector')
-
-        for sector_name, group in sectors:
-            sector_tickers[sector_name] = list(group['Symbol'])
-
-        # Filtrar los tickers según la categoría de interés
-        selected_sector_tickers = [ticker.replace(".", "-") for ticker in sector_tickers.get(sector, [])]
-
-        if not selected_sector_tickers:
-            return JsonResponse({'error': 'Invalid sector provided'}, status=400)
-
-        # Obtener precios de cierre
+        # Obtener precios de cierre desde la base de datos
         start = '2015-01-01'
         end = '2023-07-01'
-        sp500_fin = pd.DataFrame(yf.download(selected_sector_tickers + ['^GSPC'], start, end)['Close']).dropna(axis=1)
+        stock_prices = StockData.objects.filter(
+            ticker__in=sector_tickers + ['^GSPC'],  # Incluyendo SP500 como referencia
+            date__range=[start, end]
+        ).values('ticker', 'date', 'close_price')
+
+        # Convertir los datos de la base de datos a un DataFrame
+        df = pd.DataFrame(stock_prices)
+        if df.empty:
+            return JsonResponse({'error': 'No data found for the provided tickers'}, status=400)
+
+        # Pivotear para obtener los precios de cierre en formato adecuado (tickers como columnas)
+        sp500_fin = df.pivot(index='date', columns='ticker', values='close_price').dropna(axis=1)
+
+        # Calcular retornos diarios
         returns = sp500_fin.pct_change()[1:]
 
         # Calcular Sharpe ratios
-        sharpe_1y = (returns.iloc[-252:,:].mean()/returns.iloc[-252,:].std())
-        sharpe_2y = (returns.iloc[-252*2:,:].mean()/returns.iloc[-252*2,:].std())
-        sharpe_5y = (returns.iloc[-252*5:,:].mean()/returns.iloc[-252*5,:].std())
+        sharpe_x_years = (returns.iloc[-252 * x_years:].mean() / returns.iloc[-252 * x_years:].std())
+        sharpe_y_years = (returns.iloc[-252 * y_years:].mean() / returns.iloc[-252 * y_years:].std())
 
-        sharpe_df = pd.DataFrame({'Sharpe 1Y': sharpe_1y,
-                                  'Sharpe 2Y': sharpe_2y,
-                                  'Sharpe 5Y': sharpe_5y})
+        sharpe_df = pd.DataFrame({
+            f'Sharpe {x_years}Y': sharpe_x_years,
+            f'Sharpe {y_years}Y': sharpe_y_years
+        })
 
         # Preparar los datos para enviar como JSON
-        sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'Ticker'}).to_dict(orient='records')
+        sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'ticker'}).to_dict(orient='records')
 
         return JsonResponse({'sharpe_data': sharpe_data})
 
@@ -409,12 +602,23 @@ def run_backtest(request):
             except ValueError:
                 return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
 
-            # Descargar datos usando yfinance
-            data = yf.download(ticker, start=inicio, end=fin)
-            if data.empty:
-                return JsonResponse({'error': 'No data fetched for the given ticker and date range.'}, status=404)
-                
-            data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+            # Obtener datos de la base de datos
+            queryset = StockData.objects.filter(
+                ticker=ticker,
+                date__range=[inicio, fin]
+            ).order_by('date')
+            print(queryset)
+            if not queryset.exists():
+                return JsonResponse({'error': 'No data found for the given ticker and date range.'}, status=404)
+
+            # Convertir los resultados del queryset a un DataFrame de pandas
+            data = pd.DataFrame.from_records(queryset.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
+            print('si')
+            # Convertir la columna 'date' a datetime
+            data['date'] = pd.to_datetime(data['date'], errors='coerce')
+            data.set_index('date', inplace=True)  # Establecer la fecha como índice
+            data.columns = ['Open', 'High', 'Low', 'Close', 'Volume']  # Ajustar los nombres de las columnas
+            print(data)
 
             # Configurar estrategia personalizada
             CustomStrategy.rapida = rapida
@@ -425,6 +629,7 @@ def run_backtest(request):
             CustomStrategy.use_rsi = strategies.get('rsi', False)
             CustomStrategy.rsi_params = strategies.get('rsiParams', {'overboughtLevel': 70, 'oversoldLevel': 30})
 
+            # Ejecutar el backtest
             bt = Backtest(data, CustomStrategy, cash=10000)
             stats = bt.run()
 
@@ -462,9 +667,18 @@ def run_backtest(request):
     
 
 def get_pivot_points(request):
-    # Obtener datos históricos de Yahoo Finance para AAPL
-    df = yf.Ticker('AAPL').history(period='5y').reset_index()
-    df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+    # Obtener el ticker de los parámetros de la solicitud
+    ticker = request.GET.get('ticker', 'AAPL')  # AAPL como valor predeterminado si no se proporciona
+
+    # Obtener datos históricos de Yahoo Finance para el ticker seleccionado
+    #df = yf.Ticker(ticker).history(period='5y').reset_index()
+    stock_data = StockData.objects.filter(
+        Q(ticker=ticker)
+    ).values().order_by('date')
+
+            # Convertir los datos a un DataFrame
+    df = pd.DataFrame(list(stock_data))
+    df.drop(['id', 'ticker'], axis=1, inplace=True)
     df.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
 
     # Eliminar filas con volumen igual a 0
@@ -506,22 +720,28 @@ def get_pivot_points(request):
     # Aplicar la función pointpos para calcular 'pointpos' y agregarlo como columna
     df['pointpos'] = df.apply(lambda row: pointpos(row), axis=1)
 
-    # Filtrar los últimos 300 registros para graficar
+    # Filtrar todos los registros para graficar
     dfpl = df[-300:-1]
 
     # Identificar todos los puntos pivote y las líneas trazadas
     pivot_points = dfpl.dropna(subset=['pointpos'])
 
-    # Lista para almacenar los datos de los puntos pivote y líneas trazadas
+    # Lista para almacenar los datos de los puntos pivote
     data = []
 
-    # Lista para almacenar los datos históricos
-    historical = []
+    # Lista para almacenar todos los datos históricos
+    historical = dfpl.apply(lambda row: {
+        'date': row['time'].strftime('%Y-%m-%d %H:%M:%S'),
+        'open_price': row['open'],
+        'high_price': row['high'],
+        'low_price': row['low'],
+        'close_price': row['close'],
+    }, axis=1).tolist()
 
     # Calcular límites para las líneas trazadas
     limites = (dfpl['pointpos'].max() - dfpl['pointpos'].min()) / dfpl['pointpos'].count()
 
-    # Recorrer cada punto pivote para verificar la condición y añadir datos a data y historical
+    # Recorrer cada punto pivote para verificar la condición y añadir datos a data
     for i in range(len(pivot_points)):
         for j in range(i + 1, len(pivot_points)):
             if (pivot_points.iloc[i]['pointpos'] > pivot_points.iloc[i]['high'] and
@@ -533,17 +753,6 @@ def get_pivot_points(request):
                     'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
                     'type': 'high'
                 })
-                
-                # Añadir datos históricos correspondientes
-                formatted_date = pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S')
-                row = df[df['time'] == pivot_points.iloc[i]['time']].iloc[0]
-                historical.append({
-                    'date': formatted_date,
-                    'open_price': row['open'],
-                    'high_price': row['high'],
-                    'low_price': row['low'],
-                    'close_price': row['close'],
-                })
             
             elif (pivot_points.iloc[i]['pointpos'] < pivot_points.iloc[i]['low'] and
                   pivot_points.iloc[j]['pointpos'] < pivot_points.iloc[j]['low'] and
@@ -554,17 +763,25 @@ def get_pivot_points(request):
                     'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
                     'type': 'low'
                 })
-                
-                # Añadir datos históricos correspondientes
-                formatted_date = pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S')
-                row = df[df['time'] == pivot_points.iloc[i]['time']].iloc[0]
-                historical.append({
-                    'date': formatted_date,
-                    'open_price': row['open'],
-                    'high_price': row['high'],
-                    'low_price': row['low'],
-                    'close_price': row['close'],
-                })
 
     # Devolver los datos como respuesta JSON
     return JsonResponse({'data': data, 'historical': historical, 'limites':limites}, safe=False)
+
+
+def obtener_agrupamiento(request):
+    tickers_param = request.GET.get('tickers')
+    tickers = tickers_param.split(',')
+    
+    parametros_seleccionados = request.GET.get('parametros', '').split(',')
+    
+    start_date = request.GET.get('start_date', None)
+    end_date = request.GET.get('end_date', None)
+
+    try:
+        agrupamiento = agrupar_acciones(tickers, parametros_seleccionados, start_date, end_date)
+        agrupamiento = agrupamiento.reset_index()
+        agrupamiento_json = agrupamiento.to_dict(orient='records')
+        return JsonResponse(agrupamiento_json, safe=False, status=200)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

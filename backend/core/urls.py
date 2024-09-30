@@ -31,6 +31,6 @@ urlpatterns = [
     path('get_retornos_mensuales', views.get_retornos_mensuales, name='get_retornos_mensuales'),
     path('run_backtest/', views.run_backtest, name='run_backtest'),
     path('get_pivot_points/', views.get_pivot_points, name='get_pivot_points'),
-    
+    path('agrupamiento/', views.obtener_agrupamiento, name='obtener_agrupamiento'),
     
 ]

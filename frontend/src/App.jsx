@@ -15,7 +15,6 @@ import { LayoutDashboard, BarChart3, UserCircle, Boxes, Package, Receipt, Settin
 import { CardUsageExample } from "./components/Card";
 import { TableUsageExample } from "./components/Table";
 import { SparkAreaUsageExample } from "./components/SparkChart";
-import { DonutChartUsageExampleWithCustomColors } from "./components/DonutChart";
 
 import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from "@apollo/client";
 import AnalisisActivo from "./pages/AnalisisActivo";
@@ -25,6 +24,8 @@ import Correlacion from "./pages/Correlacion";
 import RetornosMensuales from "./pages/RetornosMensuales"; 
 import Backtesting from "./pages/Backtesting"; 
 import SoportesResistencias from "./pages/SoportesResistencias";
+import KMeans from "./pages/KMeans";
+
 function Logout() {
   localStorage.clear();
   return <Navigate to="/login/" />;
@@ -94,6 +95,7 @@ function App() {
         <Route path="/correlacion" element={<Correlacion />} />
         <Route path="/sharpeRatio" element={<SharpeRatioChart />} />
         <Route path="/fundamental" element={<Fundamental />} />
+        <Route path="/agrupamiento" element={<KMeans/>} />
         <Route path="/analisisActivo" element={<AnalisisActivo />} />
         <Route path="/retornosMensuales" element={<RetornosMensuales />} />
         <Route path="/soportesResistencias" element={<SoportesResistencias />} />
@@ -128,7 +130,6 @@ function App() {
                 <TableUsageExample />
               </div>
               <div className="mt-4">
-                <DonutChartUsageExampleWithCustomColors/>
               </div>
             </div>
           </div>

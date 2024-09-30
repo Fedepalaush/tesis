@@ -13,6 +13,13 @@ const Correlacion = () => {
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [tickers, setTickers] = useState(tickersBM);
+
+  const today = new Date();
+  const defaultEndDate = today.toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
+  const defaultStartDate = new Date(today.setFullYear(today.getFullYear() - 1)).toISOString().split('T')[0]; // Un año atrás en formato YYYY-MM-DD
+  
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
   
   const handleTickerChange = (event) => {
     const value = event.target.value;
@@ -34,7 +41,7 @@ const Correlacion = () => {
     setIsLoading(true);
 
     const tickersQueryString = selectedTickers.map(ticker => `tickers=${ticker}`).join('&');
-    fetch(`http://localhost:8000/api/get_correlation_matrix?${tickersQueryString}&timeframe=1d`)
+    fetch(`http://localhost:8000/api/get_correlation_matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`)
       .then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -83,6 +90,24 @@ const Correlacion = () => {
                     </button>
                   </div>
                 ))}
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm mb-1">Fecha de Inicio:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="p-2 bg-gray-800 text-white rounded w-full"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm mb-1">Fecha de Fin:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="p-2 bg-gray-800 text-white rounded w-full"
+                />
               </div>
               <button onClick={handleSubmit} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded">Ejecutar</button>
               {isLoading ? (
