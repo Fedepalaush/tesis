@@ -25,6 +25,7 @@ import RetornosMensuales from "./pages/RetornosMensuales";
 import Backtesting from "./pages/Backtesting"; 
 import SoportesResistencias from "./pages/SoportesResistencias";
 import KMeans from "./pages/KMeans";
+import MediasMoviles from "./pages/MediasMoviles";
 
 function Logout() {
   localStorage.clear();
@@ -100,6 +101,7 @@ function App() {
         <Route path="/retornosMensuales" element={<RetornosMensuales />} />
         <Route path="/soportesResistencias" element={<SoportesResistencias />} />
         <Route path="/backtesting" element={<Backtesting />} />
+        <Route path="/mediasMoviles" element={<MediasMoviles />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/*       <div>

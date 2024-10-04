@@ -24,6 +24,7 @@ from .logica.agrupacion import agrupar_acciones
 from rest_framework.decorators import api_view
 from api.models import StockData
 from django.db.models import Q
+from .logica.ema_logic import obtener_ema_signals
 
 
 from django.http import JsonResponse
@@ -785,3 +786,23 @@ def obtener_agrupamiento(request):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+    
+    
+def get_ema_signals(request):
+    if request.method == "GET":
+        # Recibir tickers y periodos de EMA desde la solicitud
+        tickers = request.GET.getlist('tickers[]')
+        ema4 = int(request.GET.get('ema4', 4))
+        ema9 = int(request.GET.get('ema9', 9))
+        ema18 = int(request.GET.get('ema18', 18))
+        use_triple = request.GET.get('use_triple', 'false').lower() == 'true'  # Convertir a boolean
+
+        # Llamar a la función que calcula las señales
+        if use_triple:
+            signals_with_data = obtener_ema_signals(tickers, [ema4, ema9, ema18], use_triple=True)
+        else:
+            signals_with_data = obtener_ema_signals(tickers, [ema4, ema9], use_triple=False)
+
+        # Retornar las señales y datos de velas como respuesta JSON
+        return JsonResponse({"signals": signals_with_data})

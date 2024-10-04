@@ -45,6 +45,7 @@ export default function Sidebar({ children }) {
                 { text: "Sharpe Ratio", href: "/sharpeRatio" },
                 { text: "Soportes/Resistencias", href: "/soportesResistencias" },
                 { text: "Heatmap Retornos", href: "/RetornosMensuales" },
+                { text: "Medias Moviles", href: "/mediasMoviles" },
               ]}
             />
             <SidebarItem icon={<TestTubeDiagonal />} text="Backtesting" href="/backtesting" />
