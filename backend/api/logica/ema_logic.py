@@ -2,26 +2,26 @@ import pandas as pd
 import pandas_ta as ta  # TA-Lib para análisis técnico
 from api.models import StockData  # Ajusta esto a tu aplicación
 
-# Función para detectar cruces con dos EMAs (Doble EMA)
-def detectar_cruce_doble(ema_prev, ema_curr):
-    ema_short_prev, ema_long_prev = ema_prev
-    ema_short_curr, ema_long_curr = ema_curr
+# Función unificada para detectar cruces
+def detectar_cruce(ema_prev, ema_curr, num_emas):
+    if num_emas == 2:
+        ema_short_prev, ema_long_prev = ema_prev
+        ema_short_curr, ema_long_curr = ema_curr
 
-    if ema_short_prev <= ema_long_prev and ema_short_curr > ema_long_curr:
-        return 1  # Cruce al alza
-    elif ema_short_prev >= ema_long_prev and ema_short_curr < ema_long_curr:
-        return 2  # Cruce a la baja
-    return 0  # No hay cruce
+        if ema_short_prev <= ema_long_prev and ema_short_curr > ema_long_curr:
+            return 1  # Cruce al alza
+        elif ema_short_prev >= ema_long_prev and ema_short_curr < ema_long_curr:
+            return 2  # Cruce a la baja
 
-# Función para detectar cruces con tres EMAs (Triple EMA)
-def detectar_cruce_triple(ema_prev, ema_curr):
-    ema4_prev, ema9_prev, ema18_prev = ema_prev
-    ema4_curr, ema9_curr, ema18_curr = ema_curr
+    elif num_emas == 3:
+        ema4_prev, ema9_prev, ema18_prev = ema_prev
+        ema4_curr, ema9_curr, ema18_curr = ema_curr
 
-    if ema4_prev <= ema9_prev and ema4_prev <= ema18_prev and ema4_curr > ema9_curr and ema4_curr > ema18_curr:
-        return 1  # Cruce al alza
-    elif ema4_prev >= ema9_prev and ema4_prev >= ema18_prev and ema4_curr < ema9_curr:
-        return 2  # Cruce a la baja
+        if ema4_prev <= ema9_prev and ema4_prev <= ema18_prev and ema4_curr > ema9_curr and ema4_curr > ema18_curr:
+            return 1  # Cruce al alza
+        elif ema4_prev >= ema9_prev and ema4_prev >= ema18_prev and ema4_curr < ema9_curr:
+            return 2  # Cruce a la baja
+
     return 0  # No hay cruce
 
 # Función para calcular las EMAs y detectar cruces
@@ -35,9 +35,10 @@ def calculate_ema(data, ema_periods, use_triple):
 
         # Detectar cruces con triple EMA
         data['Cruce'] = data.apply(
-            lambda row: detectar_cruce_triple(
+            lambda row: detectar_cruce(
                 (data['EMA_4'].shift(1)[row.name], data['EMA_9'].shift(1)[row.name], data['EMA_18'].shift(1)[row.name]),
-                (row['EMA_4'], row['EMA_9'], row['EMA_18'])
+                (row['EMA_4'], row['EMA_9'], row['EMA_18']),
+                num_emas=3
             ), axis=1
         )
     else:
@@ -48,9 +49,10 @@ def calculate_ema(data, ema_periods, use_triple):
 
         # Detectar cruces con doble EMA
         data['Cruce'] = data.apply(
-            lambda row: detectar_cruce_doble(
+            lambda row: detectar_cruce(
                 (data['EMA_short'].shift(1)[row.name], data['EMA_long'].shift(1)[row.name]),
-                (row['EMA_short'], row['EMA_long'])
+                (row['EMA_short'], row['EMA_long']),
+                num_emas=2
             ), axis=1
         )
 
