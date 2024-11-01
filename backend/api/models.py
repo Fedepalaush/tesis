@@ -19,14 +19,17 @@ class Activo(models.Model):
     
     
 class StockData(models.Model):
-    ticker = models.CharField(max_length=10)
-    date = models.DateField()
-    open_price = models.FloatField()
-    high_price = models.FloatField()
-    low_price = models.FloatField()
-    close_price = models.FloatField()
+    ticker = models.CharField(max_length=10)  # Eliminar primary_key=True
+    date = models.DateTimeField()
+    open_price = models.FloatField(null=True, blank=True)
+    high_price = models.FloatField(null=True, blank=True)
+    low_price = models.FloatField(null=True, blank=True)
+    close_price = models.FloatField(null=True, blank=True)
     volume = models.BigIntegerField()
 
     class Meta:
-        unique_together = ('ticker', 'date')
-        ordering = ['date']
+        unique_together = (('ticker', 'date'),)  # Mantener la combinación única
+        managed = False  # Django no manejará las migraciones para esta tabla
+
+    def __str__(self):
+        return f"{self.ticker} - {self.date}"

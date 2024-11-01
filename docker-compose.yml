@@ -2,19 +2,23 @@ version: '3.7'
 
 services:
   backend:
+    build:
+      context: ./backend
     volumes:
       - static:/static
     env_file:
       - .env
-    build:
-      context: ./backend
     ports:
       - "8000:8000"
+    depends_on:
+      - timescaledb  # Asegura que backend espere a que timescaledb esté listo
+
   frontend:
     build:
       context: ./frontend
     volumes:
       - frontend:/app/dist
+
   nginx:
     build:
       context: ./nginx
@@ -27,6 +31,18 @@ services:
       - backend
       - frontend
 
+  timescaledb:
+    image: timescale/timescaledb-ha:pg16
+    environment:
+      POSTGRES_DB: tesis         # Nombre de la base de datos
+      POSTGRES_USER: postgres       # Nombre de usuario
+      POSTGRES_PASSWORD: password    # Contraseña del usuario
+    ports:
+      - "5432:5432"                 # Exponer el puerto 5432
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data  # Persistir datos
+
 volumes:
   static:
   frontend:
+  timescaledb_data:  # Volumen para persistir los datos de TimescaleDB

@@ -177,13 +177,16 @@ def get_activo(request):
         except ValueError:
             return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
         print('Entrando')
+        print('Entrando')
         if ticker:
             try:
         # Obtener los datos históricos desde la base de datos
+            
                 historical_data = StockData.objects.filter(
                     ticker=ticker,
                     date__range=(start_date, end_date)
                 ).order_by('date')
+                print(historical_data)
 
                 # Convertir el queryset a un DataFrame de Pandas
                 df = pd.DataFrame.from_records(historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
