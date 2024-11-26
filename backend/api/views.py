@@ -26,219 +26,65 @@ from api.models import StockData
 from django.db.models import Q
 from .logica.ema_logic import obtener_ema_signals
 
+from .services.indicators import calculate_indicators
+from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
+from .services.signals import calculate_signal
+from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
 
 from django.http import JsonResponse
 import json
 
-def check_ema_trend(historical_data):
-    last3_ema9 = historical_data['EMA9'].tail(3).values
-    last3_ema21 = historical_data['EMA21'].tail(3).values
-
-    is_approaching_from_below = all(last3_ema9[i] < last3_ema21[i] for i in range(3))
-    is_approaching_from_above = all(last3_ema9[i] > last3_ema21[i] for i in range(3))
-
-    if is_approaching_from_below:
-        return 1
-    elif is_approaching_from_above:
-        return 2
-    else:
-        return 0
-
-def calculate_score(data):
-    # Calcular las medias móviles
-    data['SMA_50'] = data['Close'].rolling(window=50).mean()
-    data['SMA_200'] = data['Close'].rolling(window=200).mean()
-    data['EMA_9'] = data['Close'].ewm(span=9, adjust=False).mean()
-    data['EMA_21'] = data['Close'].ewm(span=21, adjust=False).mean()
-    data['EMA_12'] = data['Close'].ewm(span=12, adjust=False).mean()
-    data['EMA_26'] = data['Close'].ewm(span=26, adjust=False).mean()
-
-    # Señales de cruce
-    data['Golden_Cross'] = np.where((data['SMA_50'] > data['SMA_200']), 1, 0)
-    data['Death_Cross'] = np.where((data['SMA_50'] < data['SMA_200']), -1, 0)
-    data['Cross_9_21'] = np.where((data['EMA_9'] > data['EMA_21']), 1, -1)
-    data['Cross_12_26'] = np.where((data['EMA_12'] > data['EMA_26']), 1, -1)
-
-    # Ponderaciones
-    golden_death_weight = 0.5
-    cross_9_21_weight = 0.25
-    cross_12_26_weight = 0.25
-
-    # Calcular el puntaje total
-    data['Score'] = (golden_death_weight * (data['Golden_Cross'] + data['Death_Cross']) +
-                     cross_9_21_weight * data['Cross_9_21'] +
-                     cross_12_26_weight * data['Cross_12_26'])
-
-    # Normalizar el puntaje a un rango de 0 a 100
-    data['Score'] = ((data['Score'] + 1) / 2) * 100
-
-    # Devolver el puntaje más reciente
-    return data['Score'].iloc[-1] if not data.empty else None
-
-def calculate_signal(data, short_span, long_span, days_to_consider):
-
-    # Calcular las medias móviles
-    short_ema_col = f'EMA_{short_span}'
-    long_ema_col = f'EMA_{long_span}'
-    
-    data[short_ema_col] = data['Close'].ewm(span=short_span, adjust=False).mean()
-    data[long_ema_col] = data['Close'].ewm(span=long_span, adjust=False).mean()
-
-    # Señales de cruce
-    data['Cross'] = np.where(data[short_ema_col] > data[long_ema_col], 1, -1)
-    
-    # Señal de cruce en los días recientes según lo indicado
-    data['Signal'] = data['Cross'].diff()
-
-    # Obtener las señales de los días más recientes
-    recent_signals = data['Signal'].tail(days_to_consider)
-
-
-    # Verificar si contiene tanto un cruce al alza como a la baja
-    contains_upward_cross = (recent_signals == 2).any()
-    contains_downward_cross = (recent_signals == -2).any()
-
-    # Si hay ambos cruces (al alza y a la baja), devolver 0 (neutral)
-    if contains_upward_cross and contains_downward_cross:
-        return 0  # Neutral (ambos cruces presentes)
-    # Si hay solo cruce al alza
-    elif contains_upward_cross:
-        return 1  # Señal verde (cruce al alza)
-    # Si hay solo cruce a la baja
-    elif contains_downward_cross:
-        return -1  # Señal roja (cruce a la baja)
-    else:
-        return 0  # Neutral (sin cruce)
-    
-def detectar_cruce(ema4_prev, ema9_prev, ema18_prev, ema4_curr, ema9_curr, ema18_curr):
-    # Detectar cruce al alza
-    if ema4_prev <= ema9_prev and ema4_prev <= ema18_prev and ema4_curr > ema9_curr and ema4_curr > ema18_curr:
-        return 1  # Cruce al alza de EMA4 a EMA9 y EMA18
-    # Detectar cruce a la baja
-    elif ema4_prev >= ema9_prev and ema4_prev >= ema18_prev and ema4_curr < ema9_curr:
-        return 2  # Cruce a la baja de EMA4 a EMA9
-    return 0  # No hay cruce significativo
-    
-def evaluar_cruce(triple):
-    tiene_uno = False
-    tiene_dos = False
-
-    for item in triple:
-        valor = item.get('Cruce')
-        if valor == 1:
-            tiene_uno = True
-        elif valor == 2:
-            tiene_dos = True
-
-    if tiene_dos and not tiene_uno:
-        return 2
-    elif tiene_uno:
-        return 1
-    else:
-        return 0 
-
-    
-def calculate_triple_ema(data):
-    # Calcular las medias móviles
-    data['EMA_4'] = ta.ema(data['Close'], length=4)
-    data['EMA_9'] = ta.ema(data['Close'], length=9)
-    data['EMA_18'] = ta.ema(data['Close'], length=18)
-
-    # Aplica la función detectar_cruce para cada fila del DataFrame, comparando con la fila anterior
-    data['Cruce'] = data.apply(lambda row: detectar_cruce(
-        data['EMA_4'].shift(1)[row.name], data['EMA_9'].shift(1)[row.name], data['EMA_18'].shift(1)[row.name],
-        row['EMA_4'], row['EMA_9'], row['EMA_18']), axis=1)
-    
-    # Retorna un diccionario con las fechas y los valores de cruce
-    result = data[['Cruce']].tail(5).to_dict(orient='records')
-    return result
-
-
+      
 @csrf_exempt
 def get_activo(request):
     if request.method == 'GET':
-        ticker = request.GET.get('ticker', None)
-        
-        # Default date range: one year ago to today
-        default_end_date = datetime.today()
-        default_start_date = default_end_date - timedelta(days=365)
+        ticker = request.GET.get('ticker')
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
 
-        start_date_str = request.GET.get('start_date', default_start_date.strftime('%Y-%m-%d'))
-        end_date_str = request.GET.get('end_date', default_end_date.strftime('%Y-%m-%d'))
-        
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            validate_date_range(start_date, end_date)
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
 
-            # Check if the date range is at least 365 days
-            if (end_date - start_date).days < 365:
-                return JsonResponse({'error': 'Debe tener al menos 365 dias'}, status=400)
-
-        except ValueError:
-            return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
-        print('Entrando')
-        print('Entrando')
         if ticker:
             try:
-        # Obtener los datos históricos desde la base de datos
-            
                 historical_data = StockData.objects.filter(
-                    ticker=ticker,
-                    date__range=(start_date, end_date)
+                    ticker=ticker, date__range=(start_date, end_date)
                 ).order_by('date')
-                print(historical_data)
-
-                # Convertir el queryset a un DataFrame de Pandas
-                df = pd.DataFrame.from_records(historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
-
-                # Cambiar los nombres de las columnas a los esperados para ta-lib
-                df.rename(columns={
-                    'date': 'Date',
-                    'open_price': 'Open',
-                    'high_price': 'High',
-                    'low_price': 'Low',
-                    'close_price': 'Close',
-                    'volume': 'Volume'
-                }, inplace=True)
+                df = pd.DataFrame.from_records(
+                    historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
+                )
+                df = calculate_indicators(df)
                 
-                # Convertir la columna 'Date' a índice si lo prefieres
-                df.set_index('Date', inplace=True)
-                print(df)
-                # Calcular los indicadores técnicos usando talib
-                print('ok')
-                df['RSI'] = ta.rsi(df['Close'], length=14)
-                df['EMA200'] = ta.ema(df['Close'], length=200)
-                df['EMA9'] = ta.ema(df['Close'], length=9)
-                df['EMA21'] = ta.ema(df['Close'], length=21)
-                df['EMA50'] = ta.ema(df['Close'], length=50)  # Cambié de 40 a 50 ya que EMA40 no es común
-                df['EMA4'] = ta.ema(df['Close'], length=4)
-                df['EMA18'] = ta.ema(df['Close'], length=18)
-                print(df)
-                df.dropna(inplace=True)
-                print(df)
-                # Check EMA trend for the last 3 values
+                #tendencia = check_ema_trend(df)
+                #signal = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
+                
                 tendencia219 = check_ema_trend(df)
+                
                 emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
                 emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
                 emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
-                tripleEma = calculate_triple_ema(df)
                 
+                tripleEma = calculate_triple_ema(df)
                 scoreEma = calculate_score(df)
+                df['date'] = df['date'].dt.strftime("%Y-%m-%d")  # Convertir a solo fecha
+                df.dropna(inplace=True)
                 data = []
-                date_format = '%Y-%m-%d'
                 for date, row in df.iterrows():
-                    formatted_date = date.strftime(date_format)
-                    
+                        
                     data.append({
-                        'date': formatted_date,
-                        'open_price': row['Open'],
-                        'high_price': row['High'],
-                        'low_price': row['Low'],
-                        'close_price': row['Close'],
+                        'date': row.date,
+                        'open_price': row['open_price'],
+                        'high_price': row['high_price'],
+                        'low_price': row['low_price'],
+                        'close_price': row['close_price'],
                         'rsi': row['RSI'],
-                        'ema_200': row['EMA200'],
-                        'ema_21': row['EMA21'],
-                        'ema_9': row['EMA9'],
+                        'ema_200': row['EMA_200'],
+                        'ema_21': row['EMA_21'],
+                        'ema_9': row['EMA_9'],
                         'tendencia219': tendencia219,  # Use the trend value computed once
                         'scoreEma': scoreEma,
                         'emaRapidaSemaforo': emaRapidaSemaforo,
@@ -246,16 +92,14 @@ def get_activo(request):
                         'emaLentaSemaforo': emaLentaSemaforo,
                         'tripleEma': tripleEma,
                     })
-            
+
                 return JsonResponse({'data': data})
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
         else:
             return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
-    else:
-        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
-
-
+    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)        
+        
 
 @csrf_exempt
 def get_retornos_mensuales(request):
@@ -463,7 +307,6 @@ def get_correlation_matrix(request):
         for ticker in tickers:
             # Obtener los datos basados en las fechas proporcionadas
             ticker_data = yf.Ticker(ticker).history(start=start_date, end=end_date)
-            print(ticker_data)
             data_frames[ticker] = ticker_data['Close']
         
         # Combine the close prices into a single DataFrame
@@ -487,7 +330,6 @@ def sharpe_ratio(request):
         sector = request.GET.get('sector', 'Information Technology')
         x_years = int(request.GET.get('x_years', 5))
         y_years = int(request.GET.get('y_years', 2))
-        print(sector.lower())
         # Obtener tickers dependiendo del sector o todos los tickers si sector es 'todos'
         if sector.lower() == 'todos':
             # Obtener todos los tickers de la base de datos
@@ -611,7 +453,6 @@ def run_backtest(request):
                 ticker=ticker,
                 date__range=[inicio, fin]
             ).order_by('date')
-            print(queryset)
             if not queryset.exists():
                 return JsonResponse({'error': 'No data found for the given ticker and date range.'}, status=404)
 
@@ -622,7 +463,6 @@ def run_backtest(request):
             data['date'] = pd.to_datetime(data['date'], errors='coerce')
             data.set_index('date', inplace=True)  # Establecer la fecha como índice
             data.columns = ['Open', 'High', 'Low', 'Close', 'Volume']  # Ajustar los nombres de las columnas
-            print(data)
 
             # Configurar estrategia personalizada
             CustomStrategy.rapida = rapida
@@ -667,7 +507,6 @@ def run_backtest(request):
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'error': 'Only POST requests are allowed.'}, status=400)
-    
     
 
 def get_pivot_points(request):
@@ -789,8 +628,6 @@ def obtener_agrupamiento(request):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    
-    
     
 def get_ema_signals(request):
     if request.method == "GET":

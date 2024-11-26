@@ -11,11 +11,11 @@ import Semaforo from "../components/Semaforo";
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
 
+
   const [tickers, setTickers] = useState(tickersBM);
 
   const [data, setData] = useState([]);
   const [ticker, setTicker] = useState("AAPL");
-
   const today = new Date();
   const defaultEndDate = today.toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
   const defaultStartDate = new Date(today.setFullYear(today.getFullYear() - 1)).toISOString().split('T')[0]; // Un año atrás en formato YYYY-MM-DD
@@ -23,7 +23,7 @@ const AnalisisActivo = () => {
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const [error, setError] = useState(null);
-
+  
   const [dates, setDates] = useState([]);
   const [open, setOpen] = useState([]);
   const [high, setHigh] = useState([]);
@@ -41,7 +41,7 @@ const AnalisisActivo = () => {
   const [tripleEma, setTripleEma] = useState(undefined);
   const [hasOne, setHasOne] = useState(undefined);
   const [hasTwo, setHasTwo] = useState(undefined);
-
+  
   const [lastRsi, setLastRsi] = useState(undefined);
   const [lastEma, setLastEma] = useState(undefined);
   const [lastClose, setLastClose] = useState(undefined);
@@ -50,8 +50,10 @@ const AnalisisActivo = () => {
   const [diferenciaHoy, setDiferenciaHoy] = useState(undefined);
   const [diferenciaSemana, setDiferenciaSemana] = useState(undefined);
   const [diferenciaEma, setDiferenciaEma] = useState(undefined);
-
+  
   useEffect(() => {
+    console.log('Aca estoyyy')
+    console.log(data)
     if (data.length > 0) {
       console.log(data);
       const dates = data.map((item) => item.date);
@@ -71,6 +73,7 @@ const AnalisisActivo = () => {
       const tripleEma = data.map((item) => item.tripleEma);
 
       setDates(dates);
+      console.log(dates)
       setOpen(open);
       setHigh(high);
       setLow(low);

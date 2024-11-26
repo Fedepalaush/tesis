@@ -35,18 +35,43 @@ class ActivoSerializer(serializers.ModelSerializer):
         return None
     
     def get_porcentaje_cartera(self, obj):
-        # Obtener el precio actual del activo
-        precio_actual = obj.precioActual or obj.precioCompra
-        # Calcular el valor total del activo en la cartera
-        valor_activo = obj.cantidad * precio_actual
+        """
+        Calcula el porcentaje que representa un activo en la cartera total del usuario.
         
-        # Obtener la suma total de la cartera del usuario
-        usuario = obj.usuario
+        :param obj: Puede ser una instancia del modelo Activo o un diccionario con los datos necesarios.
+        :return: Porcentaje que representa el activo en la cartera total, redondeado a 2 decimales.
+        """
+        # Determinar si obj es un diccionario o un modelo
+        if isinstance(obj, dict):
+            # Acceso basado en claves para diccionarios
+            precio_actual = obj.get('precioActual', 0) or obj.get('precioCompra', 0)
+            cantidad = obj.get('cantidad', 0)
+            usuario = obj.get('usuario')
+        else:
+            # Acceso basado en atributos para modelos
+            precio_actual = getattr(obj, 'precioActual', 0) or getattr(obj, 'precioCompra', 0)
+            cantidad = getattr(obj, 'cantidad', 0)
+            usuario = getattr(obj, 'usuario', None)
+
+        # Calcular el valor total del activo
+        valor_activo = cantidad * precio_actual
+
+        # Validar si el usuario es válido antes de continuar
+        if not usuario:
+            return 0.0
+
+        # Obtener todos los activos del usuario
         activos_usuario = Activo.objects.filter(usuario=usuario)
-        valor_total_cartera = sum(activo.cantidad * (activo.precioActual or activo.precioCompra) for activo in activos_usuario)
-        
+
+        # Calcular el valor total de la cartera del usuario
+        valor_total_cartera = sum(
+            activo.cantidad * (activo.precioActual or activo.precioCompra) for activo in activos_usuario
+        )
+
+        # Evitar división por cero y calcular el porcentaje
         if valor_total_cartera > 0:
-            # Calcular el porcentaje que representa este activo
-            return round((valor_activo / valor_total_cartera) * 100, 2)
+            porcentaje = (valor_activo / valor_total_cartera) * 100
+            return round(porcentaje, 2)
+        
         return 0.0
 
