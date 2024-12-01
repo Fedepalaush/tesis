@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'api',
     'graphene_django',
     'django_cron',
+    'rest_framework_simplejwt'
 ]
 
 GRAPHENE = {

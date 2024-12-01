@@ -9,6 +9,7 @@ import numpy as np
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import generics
 from .serializers import UserSerializer
 from django.contrib.auth import get_user_model
@@ -26,7 +27,7 @@ from api.models import StockData
 from django.db.models import Q
 from .logica.ema_logic import obtener_ema_signals
 
-from .services.indicators import calculate_indicators
+from .services.indicators import calculate_indicators, calculate_rsi
 from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
 from .services.signals import calculate_signal
 from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
@@ -57,6 +58,7 @@ def get_activo(request):
                 df = pd.DataFrame.from_records(
                     historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
                 )
+                print(df)
                 df = calculate_indicators(df)
                 
                 #tendencia = check_ema_trend(df)
@@ -67,10 +69,9 @@ def get_activo(request):
                 emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
                 emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
                 emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
-                
                 tripleEma = calculate_triple_ema(df)
                 scoreEma = calculate_score(df)
-                df['date'] = df['date'].dt.strftime("%Y-%m-%d")  # Convertir a solo fecha
+                #df['date'] = df['date'].dt.strftime("%Y-%m-%d")  # Convertir a solo fecha
                 df.dropna(inplace=True)
                 data = []
                 for date, row in df.iterrows():
@@ -226,32 +227,49 @@ class ActivoListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # Obtener todos los activos del usuario
+        # Obtener todos los activos asociados al usuario
         activos = Activo.objects.filter(usuario=user)
 
         for activo in activos:
-        # Obtener el histórico de precios de cierre
-            data = yf.Ticker(activo.ticker).history(period='1y')
-            triple = calculate_triple_ema(data)
+            # Obtener el histórico de precios del activo desde la base de datos
+            historical_data = StockData.objects.filter(
+                ticker=activo.ticker,
+                date__gte=timezone.now() - timedelta(days=365)  # Último año
+            ).order_by('date')
+
+            # Convertir los datos a un DataFrame de pandas
+            df = pd.DataFrame.from_records(
+                historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
+            )
+            
+            # Verificar que existan datos antes de continuar
+            if df.empty:
+                continue
+
+            # Calcular el Triple EMA y RSI
+            triple = calculate_triple_ema(df)
             resultadoTriple = evaluar_cruce(triple)
-            rsi = ta.rsi(data['Close'], timeperiod=14).iloc[-1]
-            
-            # Asignar el precio actual y la recomendación basada en el RSI y resultadoTriple
-            activo.precioActual = data['Close'].iloc[-1]
-            
-            # Crear el diccionario con resultadoTriple y rsi
+            rsi_series = calculate_rsi(df, period=14)  # Implementar función similar a ta.rsi()
+
+        # Extraer el último valor de RSI
+            rsi = rsi_series.iloc[-1] if not rsi_series.empty else None
+            # Asignar el precio actual y la recomendación basada en el RSI y el cruce triple
+            activo.precioActual = float(df['close_price'].iloc[-1])  # Convertir a tipo float nativo
+
+            # Crear el diccionario con los valores calculados
             recomendacion_dict = {
-                "resultadoTriple": resultadoTriple,
-                "rsi": rsi
+                "resultadoTriple": resultadoTriple.tolist() if isinstance(resultadoTriple, pd.Series) else resultadoTriple,
+                "rsi": float(rsi) if isinstance(rsi, pd.Series) else rsi
             }
-            
-            # Convertir el diccionario a JSON y asignarlo a recomendacion
+
+            # Convertir el diccionario a JSON y asignarlo a la recomendación del activo
             activo.recomendacion = json.dumps(recomendacion_dict)
-            
-            # Guardar los cambios en el objeto
+
+            # Guardar los cambios en el objeto activo
             activo.save()
 
         return activos
+
     
     def perform_create(self, serializer):
         if serializer.is_valid():

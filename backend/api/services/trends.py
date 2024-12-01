@@ -25,8 +25,6 @@ def detectar_cruce(ema4_prev, ema9_prev, ema18_prev, ema4_curr, ema9_curr, ema18
 
 def calculate_score(data):
     # Calcular las medias móviles
-    print('dataaa')
-    print(data)
     data['SMA_50'] = data['close_price'].rolling(window=50).mean()
     data['SMA_200'] = data['close_price'].rolling(window=200).mean()
     data['EMA_9'] = data['close_price'].ewm(span=9, adjust=False).mean()
@@ -60,9 +58,9 @@ def calculate_score(data):
 def calculate_triple_ema(data):
     # Calcular las medias móviles
     print(data)
-    data['EMA_4'] = ta.ema(data['Close'], length=4)
-    data['EMA_9'] = ta.ema(data['Close'], length=9)
-    data['EMA_18'] = ta.ema(data['Close'], length=18)
+    data['EMA_4'] = ta.ema(data['close_price'], length=4)
+    data['EMA_9'] = ta.ema(data['close_price'], length=9)
+    data['EMA_18'] = ta.ema(data['close_price'], length=18)
 
     # Aplica la función detectar_cruce para cada fila del DataFrame, comparando con la fila anterior
     data['Cruce'] = data.apply(lambda row: detectar_cruce(
