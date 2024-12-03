@@ -25,6 +25,8 @@ from .logica.agrupacion import agrupar_acciones
 from rest_framework.decorators import api_view
 from api.models import StockData
 from django.db.models import Q
+from django.core.cache import cache
+import hashlib
 from .logica.ema_logic import obtener_ema_signals
 
 from .services.indicators import calculate_indicators, calculate_rsi
@@ -43,6 +45,10 @@ def get_activo(request):
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
 
+        # Validar parámetros
+        if not ticker:
+            return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
+
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
@@ -50,66 +56,81 @@ def get_activo(request):
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-        if ticker:
-            try:
-                historical_data = StockData.objects.filter(
-                    ticker=ticker, date__range=(start_date, end_date)
-                ).order_by('date')
-                df = pd.DataFrame.from_records(
-                    historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
-                )
-                print(df)
-                df = calculate_indicators(df)
-                
-                #tendencia = check_ema_trend(df)
-                #signal = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
-                
-                tendencia219 = check_ema_trend(df)
-                
-                emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
-                emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
-                emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
-                tripleEma = calculate_triple_ema(df)
-                scoreEma = calculate_score(df)
-                #df['date'] = df['date'].dt.strftime("%Y-%m-%d")  # Convertir a solo fecha
-                df.dropna(inplace=True)
-                data = []
-                for date, row in df.iterrows():
-                        
-                    data.append({
-                        'date': row.date,
-                        'open_price': row['open_price'],
-                        'high_price': row['high_price'],
-                        'low_price': row['low_price'],
-                        'close_price': row['close_price'],
-                        'rsi': row['RSI'],
-                        'ema_200': row['EMA_200'],
-                        'ema_21': row['EMA_21'],
-                        'ema_9': row['EMA_9'],
-                        'tendencia219': tendencia219,  # Use the trend value computed once
-                        'scoreEma': scoreEma,
-                        'emaRapidaSemaforo': emaRapidaSemaforo,
-                        'emaMediaSemaforo': emaMediaSemaforo,
-                        'emaLentaSemaforo': emaLentaSemaforo,
-                        'tripleEma': tripleEma,
-                    })
+        # Generar una clave única para el caché
+        cache_key = f"get_activo_{ticker}_{start_date_str}_{end_date_str}"
+        cached_data = cache.get(cache_key)
 
-                return JsonResponse({'data': data})
-            except Exception as e:
-                return JsonResponse({'error': str(e)}, status=500)
-        else:
-            return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
-    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)        
-        
+        if cached_data:
+            # Retornar los datos desde el caché si están disponibles
+            return JsonResponse({'data': cached_data})
+
+        # Si los datos no están en caché, proceder con el cálculo
+        try:
+            historical_data = StockData.objects.filter(
+                ticker=ticker, date__range=(start_date, end_date)
+            ).order_by('date')
+
+            df = pd.DataFrame.from_records(
+                historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
+            )
+            if df.empty:
+                return JsonResponse({'error': 'No data found for the provided ticker and date range.'}, status=404)
+
+            df = calculate_indicators(df)
+
+            tendencia219 = check_ema_trend(df)
+            emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
+            emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
+            emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
+            tripleEma = calculate_triple_ema(df)
+            scoreEma = calculate_score(df)
+
+            df.dropna(inplace=True)
+            data = []
+            for _, row in df.iterrows():
+                data.append({
+                    'date': row.date,
+                    'open_price': row['open_price'],
+                    'high_price': row['high_price'],
+                    'low_price': row['low_price'],
+                    'close_price': row['close_price'],
+                    'rsi': row['RSI'],
+                    'ema_200': row['EMA_200'],
+                    'ema_21': row['EMA_21'],
+                    'ema_9': row['EMA_9'],
+                    'tendencia219': tendencia219,
+                    'scoreEma': scoreEma,
+                    'emaRapidaSemaforo': emaRapidaSemaforo,
+                    'emaMediaSemaforo': emaMediaSemaforo,
+                    'emaLentaSemaforo': emaLentaSemaforo,
+                    'tripleEma': tripleEma,
+                })
+
+            # Guardar los resultados en caché
+            cache.set(cache_key, data, timeout=3600)  # Cache por 1 hora
+            return JsonResponse({'data': data})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 @csrf_exempt
 def get_retornos_mensuales(request):
     if request.method == 'GET':
         try:
-            ticker = request.GET.get('ticker', 'AAPL')  # Obtener el ticker de los parámetros de la solicitud
-            years = int(request.GET.get('years', 10))  # Obtener los años de los parámetros, valor por defecto 10
+            ticker = request.GET.get('ticker', 'AAPL')  # Ticker por defecto: AAPL
+            years = int(request.GET.get('years', 10))  # Años por defecto: 10
 
-            # Filtrar los datos desde la base de datos para los últimos 'years' años
+            # Generar una clave única para la caché
+            cache_key = f"retornos_mensuales_{ticker}_{years}"
+            cached_data = cache.get(cache_key)
+
+            if cached_data:
+                # Si los datos están en caché, retornarlos directamente
+                return JsonResponse({'data': cached_data})
+
+            # Consultar la base de datos para los últimos 'years' años
             stock_data = StockData.objects.filter(
                 ticker=ticker,
                 date__gte=pd.Timestamp.now() - pd.DateOffset(years=years)
@@ -121,7 +142,7 @@ def get_retornos_mensuales(request):
             if df.empty:
                 return JsonResponse({'error': 'No data found for the provided ticker'}, status=400)
 
-            # Convertir la columna 'date' a datetime y establecerla como índice
+            # Procesar los datos
             df['date'] = pd.to_datetime(df['date'])
             df.set_index('date', inplace=True)
 
@@ -129,14 +150,14 @@ def get_retornos_mensuales(request):
             df['Month'] = df.index.to_period('M')
             monthly_returns = df['close_price'].resample('M').ffill().pct_change()
 
-            # Crear una tabla pivot para los retornos mensuales
+            # Crear una tabla pivot para retornos mensuales
             monthly_returns = monthly_returns.to_frame().reset_index()
             monthly_returns['Year'] = monthly_returns['date'].dt.year
             monthly_returns['Month'] = monthly_returns['date'].dt.month
 
             pivot_table = monthly_returns.pivot_table(values='close_price', index='Year', columns='Month')
 
-            # Convertir la tabla pivot a un formato adecuado para Plotly
+            # Convertir la tabla pivot a un formato JSON
             data_for_plotly = []
             for year in pivot_table.index:
                 for month in pivot_table.columns:
@@ -146,6 +167,9 @@ def get_retornos_mensuales(request):
                         'month': month,
                         'return': value if pd.notna(value) else None
                     })
+
+            # Guardar los datos procesados en caché por 1 hora
+            cache.set(cache_key, data_for_plotly, timeout=3600)
 
             return JsonResponse({'data': data_for_plotly})
         except Exception as e:
@@ -164,9 +188,11 @@ def get_fundamental_info(request):
         try:
             # Crear objeto Ticker usando yfinance
             ticker_obj = yf.Ticker(ticker)
+            print(ticker_obj)
             
             # Obtener datos financieros
             cashflows = ticker_obj.get_cashflow()
+            print(cashflows)
             balance = ticker_obj.get_balance_sheet()
             income = ticker_obj.get_income_stmt()
 
@@ -206,7 +232,7 @@ def get_fundamental_info(request):
             return JsonResponse({'error': f'Failed to retrieve data for {ticker}: {str(e)}'}, status=500)
     
     else:
-        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
+        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)    
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -218,7 +244,13 @@ class CheckUserExistsAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, username, *args, **kwargs):
-        exists = get_user_model().objects.filter(username=username).exists()
+        cache_key = f"user_exists_{username}"
+        exists = cache.get(cache_key)
+
+        if exists is None:  # Si no está en caché, realizar la consulta
+            exists = get_user_model().objects.filter(username=username).exists()
+            cache.set(cache_key, exists, timeout=3600)  # Guardar en caché por 1 hora
+
         return JsonResponse({'exists': exists})
 
 class ActivoListCreate(generics.ListCreateAPIView):
@@ -227,45 +259,49 @@ class ActivoListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # Obtener todos los activos asociados al usuario
         activos = Activo.objects.filter(usuario=user)
 
         for activo in activos:
-            # Obtener el histórico de precios del activo desde la base de datos
-            historical_data = StockData.objects.filter(
-                ticker=activo.ticker,
-                date__gte=timezone.now() - timedelta(days=365)  # Último año
-            ).order_by('date')
+            cache_key = f"activo_{activo.id}_data"
+            cached_data = cache.get(cache_key)
 
-            # Convertir los datos a un DataFrame de pandas
-            df = pd.DataFrame.from_records(
-                historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
-            )
-            
-            # Verificar que existan datos antes de continuar
-            if df.empty:
-                continue
+            if cached_data:
+                activo.precioActual = cached_data['precioActual']
+                activo.recomendacion = cached_data['recomendacion']
+            else:
+                # Obtener el histórico de precios del activo desde la base de datos
+                historical_data = StockData.objects.filter(
+                    ticker=activo.ticker,
+                    date__gte=timezone.now() - timedelta(days=365)
+                ).order_by('date')
 
-            # Calcular el Triple EMA y RSI
-            triple = calculate_triple_ema(df)
-            resultadoTriple = evaluar_cruce(triple)
-            rsi_series = calculate_rsi(df, period=14)  # Implementar función similar a ta.rsi()
+                df = pd.DataFrame.from_records(
+                    historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
+                )
 
-        # Extraer el último valor de RSI
-            rsi = rsi_series.iloc[-1] if not rsi_series.empty else None
-            # Asignar el precio actual y la recomendación basada en el RSI y el cruce triple
-            activo.precioActual = float(df['close_price'].iloc[-1])  # Convertir a tipo float nativo
+                if df.empty:
+                    continue
 
-            # Crear el diccionario con los valores calculados
-            recomendacion_dict = {
-                "resultadoTriple": resultadoTriple.tolist() if isinstance(resultadoTriple, pd.Series) else resultadoTriple,
-                "rsi": float(rsi) if isinstance(rsi, pd.Series) else rsi
-            }
+                triple = calculate_triple_ema(df)
+                resultadoTriple = evaluar_cruce(triple)
+                rsi_series = calculate_rsi(df, period=14)
 
-            # Convertir el diccionario a JSON y asignarlo a la recomendación del activo
-            activo.recomendacion = json.dumps(recomendacion_dict)
+                rsi = rsi_series.iloc[-1] if not rsi_series.empty else None
+                activo.precioActual = float(df['close_price'].iloc[-1])
 
-            # Guardar los cambios en el objeto activo
+                recomendacion_dict = {
+                    "resultadoTriple": resultadoTriple.tolist() if isinstance(resultadoTriple, pd.Series) else resultadoTriple,
+                    "rsi": float(rsi) if isinstance(rsi, pd.Series) else rsi
+                }
+
+                activo.recomendacion = json.dumps(recomendacion_dict)
+
+                # Guardar en caché por 1 hora
+                cache.set(cache_key, {
+                    'precioActual': activo.precioActual,
+                    'recomendacion': activo.recomendacion
+                }, timeout=3600)
+
             activo.save()
 
         return activos
@@ -317,72 +353,90 @@ def get_correlation_matrix(request):
 
         if not tickers:
             return JsonResponse({'error': 'Tickers are required.'}, status=400)
-        
+
         if not start_date or not end_date:
             return JsonResponse({'error': 'Start and end dates are required.'}, status=400)
 
-        data_frames = {}
-        for ticker in tickers:
-            # Obtener los datos basados en las fechas proporcionadas
-            ticker_data = yf.Ticker(ticker).history(start=start_date, end=end_date)
-            data_frames[ticker] = ticker_data['Close']
+        # Crear una clave de caché única basada en los parámetros de la solicitud
+        cache_key = hashlib.md5(f"{','.join(sorted(tickers))}_{start_date}_{end_date}".encode()).hexdigest()
+
+        # Verificar si ya existe una matriz de correlación en caché
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return JsonResponse({'correlation_matrix': cached_data})
+
+        try:
+            data_frames = {}
+            for ticker in tickers:
+                # Obtener los datos basados en las fechas proporcionadas
+                ticker_data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+                data_frames[ticker] = ticker_data['Close']
+
+            # Combinar los precios de cierre en un único DataFrame
+            combined_data = pd.DataFrame(data_frames)
+
+            # Eliminar filas con valores NaN
+            combined_data.dropna(inplace=True)
+
+            # Calcular la matriz de correlación
+            correlation_matrix = combined_data.corr()
+
+            # Convertir la matriz de correlación a un formato de diccionario para la respuesta JSON
+            correlation_data = correlation_matrix.to_dict()
+
+            # Almacenar el resultado en caché con un tiempo de expiración de 1 hora
+            cache.set(cache_key, correlation_data, timeout=3600)
+
+            return JsonResponse({'correlation_matrix': correlation_data})
         
-        # Combine the close prices into a single DataFrame
-        combined_data = pd.DataFrame(data_frames)
-        
-        # Drop rows with any NaN values
-        combined_data.dropna(inplace=True)
-        
-        # Calculate the correlation matrix
-        correlation_matrix = combined_data.corr()
-        
-        # Convert the correlation matrix to a dictionary format suitable for JSON response
-        correlation_data = correlation_matrix.to_dict()
-        
-        return JsonResponse({'correlation_matrix': correlation_data})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 def sharpe_ratio(request):
     if request.method == 'GET':
+        # Parámetros
         sector = request.GET.get('sector', 'Information Technology')
         x_years = int(request.GET.get('x_years', 5))
         y_years = int(request.GET.get('y_years', 2))
-        # Obtener tickers dependiendo del sector o todos los tickers si sector es 'todos'
+
+        # Generar una clave única para el caché
+        cache_key = f"sharpe_ratio_{sector}_{x_years}_{y_years}"
+        sharpe_data = cache.get(cache_key)
+
+        if sharpe_data:
+            # Si los datos están en caché, retornarlos
+            return JsonResponse({'sharpe_data': sharpe_data})
+
+        # Obtener tickers
         if sector.lower() == 'todos':
-            # Obtener todos los tickers de la base de datos
             sector_tickers = list(StockData.objects.values_list('ticker', flat=True).distinct())
         else:
-            # Obtener tickers del sector específico desde Wikipedia
-            tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][['Symbol', 'GICS Sector', 'GICS Sub-Industry']]
+            tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][
+                ['Symbol', 'GICS Sector', 'GICS Sub-Industry']
+            ]
             sector_tickers = tickers[tickers['GICS Sector'] == sector]['Symbol'].tolist()
             sector_tickers = [ticker.replace(".", "-") for ticker in sector_tickers]
-            print(sector_tickers)
 
-        # Si no hay tickers encontrados, retornar error
         if not sector_tickers:
             return JsonResponse({'error': 'Invalid sector or no tickers found'}, status=400)
 
-        # Obtener precios de cierre desde la base de datos
+        # Consultar precios desde la base de datos
         start = '2015-01-01'
         end = '2023-07-01'
         stock_prices = StockData.objects.filter(
-            ticker__in=sector_tickers + ['^GSPC'],  # Incluyendo SP500 como referencia
+            ticker__in=sector_tickers + ['^GSPC'],
             date__range=[start, end]
         ).values('ticker', 'date', 'close_price')
 
-        # Convertir los datos de la base de datos a un DataFrame
         df = pd.DataFrame(stock_prices)
         if df.empty:
             return JsonResponse({'error': 'No data found for the provided tickers'}, status=400)
 
-        # Pivotear para obtener los precios de cierre en formato adecuado (tickers como columnas)
         sp500_fin = df.pivot(index='date', columns='ticker', values='close_price').dropna(axis=1)
-
-        # Calcular retornos diarios
         returns = sp500_fin.pct_change()[1:]
 
-        # Calcular Sharpe ratios
         sharpe_x_years = (returns.iloc[-252 * x_years:].mean() / returns.iloc[-252 * x_years:].std())
         sharpe_y_years = (returns.iloc[-252 * y_years:].mean() / returns.iloc[-252 * y_years:].std())
 
@@ -391,8 +445,10 @@ def sharpe_ratio(request):
             f'Sharpe {y_years}Y': sharpe_y_years
         })
 
-        # Preparar los datos para enviar como JSON
         sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'ticker'}).to_dict(orient='records')
+
+        # Guardar en caché los resultados
+        cache.set(cache_key, sharpe_data, timeout=3600)  # Cache por 1 hora
 
         return JsonResponse({'sharpe_data': sharpe_data})
 
@@ -632,18 +688,25 @@ def get_pivot_points(request):
 def obtener_agrupamiento(request):
     tickers_param = request.GET.get('tickers')
     tickers = tickers_param.split(',')
-    
     parametros_seleccionados = request.GET.get('parametros', '').split(',')
-    
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    # Generar clave de caché
+    cache_key = hashlib.md5(f"agrupamiento_{','.join(tickers)}_{start_date}_{end_date}_{','.join(parametros_seleccionados)}".encode()).hexdigest()
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return JsonResponse(cached_data, safe=False)
 
     try:
         agrupamiento = agrupar_acciones(tickers, parametros_seleccionados, start_date, end_date)
         agrupamiento = agrupamiento.reset_index()
         agrupamiento_json = agrupamiento.to_dict(orient='records')
+
+        # Almacenar en caché
+        cache.set(cache_key, agrupamiento_json, timeout=3600)
+
         return JsonResponse(agrupamiento_json, safe=False, status=200)
-    
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
@@ -654,13 +717,35 @@ def get_ema_signals(request):
         ema4 = int(request.GET.get('ema4', 4))
         ema9 = int(request.GET.get('ema9', 9))
         ema18 = int(request.GET.get('ema18', 18))
-        use_triple = request.GET.get('use_triple', 'false').lower() == 'true'  # Convertir a boolean
+        use_triple = request.GET.get('use_triple', 'false').lower() == 'true'
+
+        # Generar una clave única para la caché basada en los parámetros
+        cache_key = hashlib.md5(
+            f"ema_signals_{','.join(tickers)}_{ema4}_{ema9}_{ema18}_{use_triple}".encode()
+        ).hexdigest()
+
+        # Verificar si ya existe un resultado en caché
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return JsonResponse(cached_data)
 
         # Llamar a la función que calcula las señales
-        if use_triple:
-            signals_with_data = obtener_ema_signals(tickers, [ema4, ema9, ema18], use_triple=True)
-        else:
-            signals_with_data = obtener_ema_signals(tickers, [ema4, ema9], use_triple=False)
+        try:
+            if use_triple:
+                signals_with_data = obtener_ema_signals(tickers, [ema4, ema9, ema18], use_triple=True)
+            else:
+                signals_with_data = obtener_ema_signals(tickers, [ema4, ema9], use_triple=False)
 
-        # Retornar las señales y datos de velas como respuesta JSON
-        return JsonResponse({"signals": signals_with_data})
+            # Crear el resultado
+            result = {"signals": signals_with_data}
+
+            # Almacenar el resultado en caché (ej. durante 1 hora)
+            cache.set(cache_key, result, timeout=3600)
+
+            # Retornar el resultado
+            return JsonResponse(result)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Only GET requests are allowed."}, status=400)
