@@ -24,12 +24,13 @@ from datetime import datetime, timedelta
 from .logica.agrupacion import agrupar_acciones
 from rest_framework.decorators import api_view
 from api.models import StockData
+from .services.pivot import calculate_pivots
 from django.db.models import Q
 from django.core.cache import cache
 import hashlib
 from .logica.ema_logic import obtener_ema_signals
 
-from .services.indicators import calculate_indicators, calculate_rsi
+from .services.indicators import calculate_indicators, calculate_rsi, calculate_analytics, fetch_historical_data
 from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
 from .services.signals import calculate_signal
 from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
@@ -66,47 +67,10 @@ def get_activo(request):
 
         # Si los datos no están en caché, proceder con el cálculo
         try:
-            historical_data = StockData.objects.filter(
-                ticker=ticker, date__range=(start_date, end_date)
-            ).order_by('date')
-
-            df = pd.DataFrame.from_records(
-                historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
-            )
+            df = fetch_historical_data(ticker, start_date, end_date)
             if df.empty:
                 return JsonResponse({'error': 'No data found for the provided ticker and date range.'}, status=404)
-
-            df = calculate_indicators(df)
-
-            tendencia219 = check_ema_trend(df)
-            emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
-            emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
-            emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
-            tripleEma = calculate_triple_ema(df)
-            scoreEma = calculate_score(df)
-
-            df.dropna(inplace=True)
-            data = []
-            for _, row in df.iterrows():
-                data.append({
-                    'date': row.date,
-                    'open_price': row['open_price'],
-                    'high_price': row['high_price'],
-                    'low_price': row['low_price'],
-                    'close_price': row['close_price'],
-                    'rsi': row['RSI'],
-                    'ema_200': row['EMA_200'],
-                    'ema_21': row['EMA_21'],
-                    'ema_9': row['EMA_9'],
-                    'tendencia219': tendencia219,
-                    'scoreEma': scoreEma,
-                    'emaRapidaSemaforo': emaRapidaSemaforo,
-                    'emaMediaSemaforo': emaMediaSemaforo,
-                    'emaLentaSemaforo': emaLentaSemaforo,
-                    'tripleEma': tripleEma,
-                })
-
-            # Guardar los resultados en caché
+            data = calculate_analytics(df)
             cache.set(cache_key, data, timeout=3600)  # Cache por 1 hora
             return JsonResponse({'data': data})
 
@@ -601,102 +565,14 @@ def get_pivot_points(request):
     # Obtener el ticker de los parámetros de la solicitud
     ticker = request.GET.get('ticker', 'AAPL')  # AAPL como valor predeterminado si no se proporciona
 
-    # Obtener datos históricos de Yahoo Finance para el ticker seleccionado
-    #df = yf.Ticker(ticker).history(period='5y').reset_index()
-    stock_data = StockData.objects.filter(
-        Q(ticker=ticker)
-    ).values().order_by('date')
+    # Obtener datos históricos del modelo
+    stock_data = StockData.objects.filter(ticker=ticker).values().order_by('date')
 
-            # Convertir los datos a un DataFrame
-    df = pd.DataFrame(list(stock_data))
-    df.drop(['id', 'ticker'], axis=1, inplace=True)
-    df.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
-
-    # Eliminar filas con volumen igual a 0
-    df = df[df['volume'] != 0]
-    df.reset_index(drop=True, inplace=True)
-
-    # Función para calcular el pivote
-    def pivotid(df1, l, n1, n2):
-        if l - n1 < 0 or l + n2 >= len(df1):
-            return 0
-        pividlow = 1
-        pividhigh = 1
-        for i in range(l - n1, l + n2 + 1):
-            if df1.low[l] > df1.low[i]:
-                pividlow = 0
-            if df1.high[l] < df1.high[i]:
-                pividhigh = 0
-        if pividlow and pividhigh:
-            return 3
-        elif pividlow:
-            return 1
-        elif pividhigh:
-            return 2
-        else:
-            return 0
-
-    # Aplicar la función pivotid para calcular el pivote y agregarlo como columna 'pivot'
-    df['pivot'] = df.apply(lambda x: pivotid(df, x.name, 10, 10), axis=1)
-
-    # Función para calcular la posición del punto pivot
-    def pointpos(x):
-        if x['pivot'] == 1:
-            return x['low'] - 1e-3
-        elif x['pivot'] == 2:
-            return x['high'] + 1e-3
-        else:
-            return None
-
-    # Aplicar la función pointpos para calcular 'pointpos' y agregarlo como columna
-    df['pointpos'] = df.apply(lambda row: pointpos(row), axis=1)
-
-    # Filtrar todos los registros para graficar
-    dfpl = df[-300:-1]
-
-    # Identificar todos los puntos pivote y las líneas trazadas
-    pivot_points = dfpl.dropna(subset=['pointpos'])
-
-    # Lista para almacenar los datos de los puntos pivote
-    data = []
-
-    # Lista para almacenar todos los datos históricos
-    historical = dfpl.apply(lambda row: {
-        'date': row['time'].strftime('%Y-%m-%d %H:%M:%S'),
-        'open_price': row['open'],
-        'high_price': row['high'],
-        'low_price': row['low'],
-        'close_price': row['close'],
-    }, axis=1).tolist()
-
-    # Calcular límites para las líneas trazadas
-    limites = (dfpl['pointpos'].max() - dfpl['pointpos'].min()) / dfpl['pointpos'].count()
-
-    # Recorrer cada punto pivote para verificar la condición y añadir datos a data
-    for i in range(len(pivot_points)):
-        for j in range(i + 1, len(pivot_points)):
-            if (pivot_points.iloc[i]['pointpos'] > pivot_points.iloc[i]['high'] and
-                pivot_points.iloc[j]['pointpos'] > pivot_points.iloc[j]['high'] and
-                abs(pivot_points.iloc[i]['pointpos'] - pivot_points.iloc[j]['pointpos']) < limites):
-                
-                data.append({
-                    'time': pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
-                    'type': 'high'
-                })
-            
-            elif (pivot_points.iloc[i]['pointpos'] < pivot_points.iloc[i]['low'] and
-                  pivot_points.iloc[j]['pointpos'] < pivot_points.iloc[j]['low'] and
-                  abs(pivot_points.iloc[i]['pointpos'] - pivot_points.iloc[j]['pointpos']) < limites):
-                
-                data.append({
-                    'time': pivot_points.iloc[i]['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'pointpos': float(pivot_points.iloc[i]['pointpos']),  # Convertir a flotante si es necesario
-                    'type': 'low'
-                })
+    # Calcular pivotes usando la función del servicio
+    pivot_data = calculate_pivots(stock_data)
 
     # Devolver los datos como respuesta JSON
-    return JsonResponse({'data': data, 'historical': historical, 'limites':limites}, safe=False)
+    return JsonResponse(pivot_data, safe=False)
 
 
 def obtener_agrupamiento(request):
