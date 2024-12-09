@@ -13,9 +13,6 @@ const MediasMoviles = () => {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Estado para almacenar las EMAs actuales que se van a usar para la solicitud
-  const [requestParams, setRequestParams] = useState({});
-
   // Efecto que se ejecuta cada vez que cambia useTriple
   useEffect(() => {
     setSignals([]); // Restablece las señales al cambiar el tipo de EMA
@@ -25,15 +22,6 @@ const MediasMoviles = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Actualiza requestParams con los valores actuales de las EMAs y el tipo de EMA
-      setRequestParams({
-        tickers,
-        ema4,
-        ema9,
-        ema18: useTriple ? ema18 : undefined,
-        useTriple,
-      });
-
       const response = await axios.get("http://localhost:8000/get_ema_signals/", {
         params: {
           tickers,
@@ -43,6 +31,9 @@ const MediasMoviles = () => {
           useTriple,
         },
       });
+
+      const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+      console.log(responseData);
       setSignals(response.data.signals);
     } catch (error) {
       console.error("Error fetching signals:", error);

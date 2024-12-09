@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pandas as pd
 
 def validate_date_range(start_date, end_date, min_days=365):
     if (end_date - start_date).days < min_days:
@@ -30,3 +31,9 @@ def evaluar_cruce(triple):
         return 1
     else:
         return 0 
+    
+
+def dataframe_from_historical_data(historical_data):
+    return pd.DataFrame.from_records(
+        historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
+    )    

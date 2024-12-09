@@ -1,6 +1,6 @@
 import numpy as np
 import pandas_ta as ta
-from ..logica.ema_logic import obtener_ema_signals
+from .ema_logic import obtener_ema_signals
 
 def check_ema_trend(data):
     last3_ema9 = data['EMA_9'].tail(3).values

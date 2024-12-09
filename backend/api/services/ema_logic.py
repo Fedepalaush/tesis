@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas_ta as ta  # TA-Lib para análisis técnico
 from api.models import StockData  # Ajusta esto a tu aplicación
+from typing import List
 
 # Función unificada para detectar cruces
 def detectar_cruce(ema_prev, ema_curr, num_emas):
@@ -73,7 +74,7 @@ def evaluar_cruce(triple):
 # Función principal para obtener señales de cruce
 def obtener_ema_signals(tickers, ema_periods, use_triple):
     signals = []  # Almacenar las señales generadas
-    for ticker in tickers:
+    for ticker in tickers[:20]:
         # Obtener los datos históricos del modelo StockData
         historical_data = StockData.objects.filter(ticker=ticker).order_by('date')
 
@@ -108,7 +109,9 @@ def obtener_ema_signals(tickers, ema_periods, use_triple):
                 ema_values = df[['Date', 'EMA_4', 'EMA_9', 'EMA_18']].tail(60).to_dict(orient='records')
             else:
                 ema_values = df[['Date', 'EMA_short', 'EMA_long']].tail(60).to_dict(orient='records')
-
+                
+            df.dropna(inplace=True)    
+            print(df)
             # Añadir la señal a la lista
             signals.append({
                 "ticker": ticker,

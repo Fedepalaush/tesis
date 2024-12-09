@@ -21,16 +21,19 @@ from datetime import datetime
 from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
 from datetime import datetime, timedelta
-from .logica.agrupacion import agrupar_acciones
+from .services.agrupacion import agrupar_acciones
 from rest_framework.decorators import api_view
 from api.models import StockData
 from .services.pivot import calculate_pivots
 from django.db.models import Q
 from django.core.cache import cache
 import hashlib
-from .logica.ema_logic import obtener_ema_signals
-
-from .services.indicators import calculate_indicators, calculate_rsi, calculate_analytics, fetch_historical_data
+from .services.ema_logic import obtener_ema_signals
+from .services.activo_service import process_activo
+from . services.fundamental import get_fundamental_data
+from .services.backtesting import run_backtest_service
+from .services.retornos_mensuales import calcular_retornos_mensuales
+from .services.indicators import calculate_indicators, calculate_rsi, calculate_analytics, fetch_historical_data, calculate_sharpe_ratio
 from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
 from .services.signals import calculate_signal
 from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
@@ -94,52 +97,21 @@ def get_retornos_mensuales(request):
                 # Si los datos están en caché, retornarlos directamente
                 return JsonResponse({'data': cached_data})
 
-            # Consultar la base de datos para los últimos 'years' años
-            stock_data = StockData.objects.filter(
-                ticker=ticker,
-                date__gte=pd.Timestamp.now() - pd.DateOffset(years=years)
-            ).values('date', 'close_price').order_by('date')
+            # Llamar al servicio para calcular los retornos mensuales
+            data_for_plotly = calcular_retornos_mensuales(ticker, years)
 
-            # Convertir los datos a un DataFrame
-            df = pd.DataFrame(list(stock_data))
-
-            if df.empty:
+            if not data_for_plotly:
                 return JsonResponse({'error': 'No data found for the provided ticker'}, status=400)
-
-            # Procesar los datos
-            df['date'] = pd.to_datetime(df['date'])
-            df.set_index('date', inplace=True)
-
-            # Calcular los retornos mensuales
-            df['Month'] = df.index.to_period('M')
-            monthly_returns = df['close_price'].resample('M').ffill().pct_change()
-
-            # Crear una tabla pivot para retornos mensuales
-            monthly_returns = monthly_returns.to_frame().reset_index()
-            monthly_returns['Year'] = monthly_returns['date'].dt.year
-            monthly_returns['Month'] = monthly_returns['date'].dt.month
-
-            pivot_table = monthly_returns.pivot_table(values='close_price', index='Year', columns='Month')
-
-            # Convertir la tabla pivot a un formato JSON
-            data_for_plotly = []
-            for year in pivot_table.index:
-                for month in pivot_table.columns:
-                    value = pivot_table.loc[year, month]
-                    data_for_plotly.append({
-                        'year': year,
-                        'month': month,
-                        'return': value if pd.notna(value) else None
-                    })
 
             # Guardar los datos procesados en caché por 1 hora
             cache.set(cache_key, data_for_plotly, timeout=3600)
 
             return JsonResponse({'data': data_for_plotly})
+
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    else:
-        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
+
+    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 @csrf_exempt
 def get_fundamental_info(request):
@@ -149,68 +121,13 @@ def get_fundamental_info(request):
         if not ticker:
             return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
 
-        # Usar cache para obtener datos si están disponibles
-        cache_key = f'fundamental_info_{ticker}'
-        cached_data = cache.get(cache_key)
-
-        if cached_data:
-            return JsonResponse({'data': cached_data})
-        
         try:
-            # Crear objeto Ticker usando yfinance
-            ticker_obj = yf.Ticker(ticker)
-            
-            # Obtener datos financieros
-            cashflows = ticker_obj.get_cashflow()
-            balance = ticker_obj.get_balance_sheet()
-            income = ticker_obj.get_income_stmt()
-
-            # Función para eliminar columnas con más de 10 NaNs
-            def drop_columns_with_many_nans(df):
-                if not df.empty:
-                    return df.dropna(axis=1, thresh=len(df) - 10)
-                else:
-                    return df
-
-            # Eliminar columnas con más de 10 NaNs
-            cashflows = drop_columns_with_many_nans(cashflows)
-            balance = drop_columns_with_many_nans(balance)
-            income = drop_columns_with_many_nans(income)
-
-            # Convertir DataFrames a JSON
-            cashflows_json = cashflows.to_json(date_format='iso') if not cashflows.empty else None
-            balance_json = balance.to_json(date_format='iso') if not balance.empty else None
-            income_json = income.to_json(date_format='iso') if not income.empty else None
-
-            # Extraer deuda a largo y corto plazo
-            long_term_debt = (
-                balance.get('LongTermDebt').values[0]
-                if 'LongTermDebt' in balance.columns else 0
-            )
-            current_debt = (
-                balance.get('CurrentDebt').values[0]
-                if 'CurrentDebt' in balance.columns else 0
-            )
-
-            # Datos fundamentales para incluir en la respuesta
-            fundamental_data = {
-                'cash_flow': cashflows_json,
-                'balance': balance_json,
-                'income': income_json,
-                'long_term_debt': long_term_debt,
-                'current_debt': current_debt
-            }
-
-            # Almacenar en cache por 1 hora (3600 segundos)
-            cache.set(cache_key, fundamental_data, timeout=3600)
-
-            return JsonResponse({'data': fundamental_data})
-        
-        except Exception as e:
-            return JsonResponse({'error': f'Failed to retrieve data for {ticker}: {str(e)}'}, status=500)
+            data = get_fundamental_data(ticker)
+            return JsonResponse({'data': data})
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=500)
     
-    else:
-        return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
+    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -240,47 +157,12 @@ class ActivoListCreate(generics.ListCreateAPIView):
         activos = Activo.objects.filter(usuario=user)
 
         for activo in activos:
-            cache_key = f"activo_{activo.id}_data"
-            cached_data = cache.get(cache_key)
-
-            if cached_data:
-                activo.precioActual = cached_data['precioActual']
-                activo.recomendacion = cached_data['recomendacion']
-            else:
-                # Obtener el histórico de precios del activo desde la base de datos
-                historical_data = StockData.objects.filter(
-                    ticker=activo.ticker,
-                    date__gte=timezone.now() - timedelta(days=365)
-                ).order_by('date')
-
-                df = pd.DataFrame.from_records(
-                    historical_data.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume')
-                )
-
-                if df.empty:
-                    continue
-
-                triple = calculate_triple_ema(df)
-                resultadoTriple = evaluar_cruce(triple)
-                rsi_series = calculate_rsi(df, period=14)
-
-                rsi = rsi_series.iloc[-1] if not rsi_series.empty else None
-                activo.precioActual = float(df['close_price'].iloc[-1])
-
-                recomendacion_dict = {
-                    "resultadoTriple": resultadoTriple.tolist() if isinstance(resultadoTriple, pd.Series) else resultadoTriple,
-                    "rsi": float(rsi) if isinstance(rsi, pd.Series) else rsi
-                }
-
-                activo.recomendacion = json.dumps(recomendacion_dict)
-
-                # Guardar en caché por 1 hora
-                cache.set(cache_key, {
-                    'precioActual': activo.precioActual,
-                    'recomendacion': activo.recomendacion
-                }, timeout=3600)
-
-            activo.save()
+            # Delegar el procesamiento al servicio
+            processed_data = process_activo(activo)
+            if processed_data:
+                activo.precioActual = processed_data['precioActual']
+                activo.recomendacion = processed_data['recomendacion']
+                activo.save()
 
         return activos
 
@@ -379,98 +261,18 @@ def sharpe_ratio(request):
         x_years = int(request.GET.get('x_years', 5))
         y_years = int(request.GET.get('y_years', 2))
 
-        # Generar una clave única para el caché
-        cache_key = f"sharpe_ratio_{sector}_{x_years}_{y_years}"
-        sharpe_data = cache.get(cache_key)
+        # Llamar al servicio para calcular el ratio de Sharpe
+        sharpe_data = calculate_sharpe_ratio(sector, x_years, y_years)
 
-        if sharpe_data:
-            # Si los datos están en caché, retornarlos
-            return JsonResponse({'sharpe_data': sharpe_data})
-
-        # Obtener tickers
-        if sector.lower() == 'todos':
-            sector_tickers = list(StockData.objects.values_list('ticker', flat=True).distinct())
-        else:
-            tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][
-                ['Symbol', 'GICS Sector', 'GICS Sub-Industry']
-            ]
-            sector_tickers = tickers[tickers['GICS Sector'] == sector]['Symbol'].tolist()
-            sector_tickers = [ticker.replace(".", "-") for ticker in sector_tickers]
-
-        if not sector_tickers:
-            return JsonResponse({'error': 'Invalid sector or no tickers found'}, status=400)
-
-        # Consultar precios desde la base de datos
-        start = '2015-01-01'
-        end = '2023-07-01'
-        stock_prices = StockData.objects.filter(
-            ticker__in=sector_tickers + ['^GSPC'],
-            date__range=[start, end]
-        ).values('ticker', 'date', 'close_price')
-
-        df = pd.DataFrame(stock_prices)
-        if df.empty:
-            return JsonResponse({'error': 'No data found for the provided tickers'}, status=400)
-
-        sp500_fin = df.pivot(index='date', columns='ticker', values='close_price').dropna(axis=1)
-        returns = sp500_fin.pct_change()[1:]
-
-        sharpe_x_years = (returns.iloc[-252 * x_years:].mean() / returns.iloc[-252 * x_years:].std())
-        sharpe_y_years = (returns.iloc[-252 * y_years:].mean() / returns.iloc[-252 * y_years:].std())
-
-        sharpe_df = pd.DataFrame({
-            f'Sharpe {x_years}Y': sharpe_x_years,
-            f'Sharpe {y_years}Y': sharpe_y_years
-        })
-
-        sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'ticker'}).to_dict(orient='records')
-
-        # Guardar en caché los resultados
-        cache.set(cache_key, sharpe_data, timeout=3600)  # Cache por 1 hora
+        # Verificar si ocurrió un error
+        if isinstance(sharpe_data, dict) and 'error' in sharpe_data:
+            return JsonResponse(sharpe_data, status=400)
 
         return JsonResponse({'sharpe_data': sharpe_data})
 
-    return JsonResponse({'error': 'GET method required'})
+    return JsonResponse({'error': 'GET method required'}, status=405)
 
-class CustomStrategy(Strategy):
-    rapida = 10
-    lenta = 20
-    tp_percentage = 0.10
-    sl_percentage = 0.08
-    use_sma_cross = False
-    use_rsi = False
-    rsi_params = {'overboughtLevel': 70, 'oversoldLevel': 30}
 
-    def init(self):
-        close = pd.Series(self.data.Close)
-
-        if self.use_sma_cross:
-            self.ema_rapida = self.I(ta.ema, close, self.rapida)
-            self.ema_lenta = self.I(ta.ema, close, self.lenta)
-
-        if self.use_rsi:
-            self.rsi = self.I(ta.rsi, close)
-
-    def next(self):
-        last_close = self.data.Close[-1]
-
-        if self.position:
-            # Si hay una posición abierta, verificar condiciones de cierre
-            if (self.use_sma_cross and crossover(self.ema_lenta, self.ema_rapida)) or (self.use_rsi and self.rsi > self.rsi_params['overboughtLevel']):
-                self.position.close()
-            return
-
-        # Condiciones de compra
-        if self.use_sma_cross and self.use_rsi:
-            if crossover(self.ema_rapida, self.ema_lenta) and (self.rsi < self.rsi_params['oversoldLevel']):
-                
-                self.buy(tp=last_close * (1 + self.tp_percentage), sl=last_close * (1 - self.sl_percentage))
-        elif self.use_sma_cross:
-            if crossover(self.ema_rapida, self.ema_lenta):
-                self.buy(tp=last_close * (1 + self.tp_percentage), sl=last_close * (1 - self.sl_percentage))
-        elif self.use_rsi:
-            if self.rsi < self.rsi_params['oversoldLevel']:
-                self.buy(tp=last_close * (1 + self.tp_percentage), sl=last_close * (1 - self.sl_percentage))
 
 @csrf_exempt
 def run_backtest(request):
@@ -478,81 +280,15 @@ def run_backtest(request):
         try:
             data = json.loads(request.body)
 
-            # Validación de datos de entrada
-            required_fields = ['ticker', 'inicio', 'fin', 'rapida', 'lenta', 'tp_percentage', 'sl_percentage', 'strategies']
-            for field in required_fields:
-                if field not in data:
-                    return JsonResponse({'error': f'Missing field: {field}'}, status=400)
+            # Llamar al servicio para ejecutar el backtest
+            result = run_backtest_service(data)
 
-            ticker = data['ticker']
-            inicio = data['inicio']
-            fin = data['fin']
-            rapida = data['rapida']
-            lenta = data['lenta']
-            tp_percentage = data['tp_percentage']
-            sl_percentage = data['sl_percentage']
-            strategies = data['strategies']
+            # Verificar si ocurrió un error
+            if 'error' in result:
+                return JsonResponse(result, status=400)
 
-            # Validar y convertir las fechas
-            try:
-                inicio = datetime.strptime(inicio, '%Y-%m-%d')
-                fin = datetime.strptime(fin, '%Y-%m-%d')
-            except ValueError:
-                return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+            return JsonResponse(result)
 
-            # Obtener datos de la base de datos
-            queryset = StockData.objects.filter(
-                ticker=ticker,
-                date__range=[inicio, fin]
-            ).order_by('date')
-            if not queryset.exists():
-                return JsonResponse({'error': 'No data found for the given ticker and date range.'}, status=404)
-
-            # Convertir los resultados del queryset a un DataFrame de pandas
-            data = pd.DataFrame.from_records(queryset.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
-            print('si')
-            # Convertir la columna 'date' a datetime
-            data['date'] = pd.to_datetime(data['date'], errors='coerce')
-            data.set_index('date', inplace=True)  # Establecer la fecha como índice
-            data.columns = ['Open', 'High', 'Low', 'Close', 'Volume']  # Ajustar los nombres de las columnas
-
-            # Configurar estrategia personalizada
-            CustomStrategy.rapida = rapida
-            CustomStrategy.lenta = lenta
-            CustomStrategy.tp_percentage = tp_percentage
-            CustomStrategy.sl_percentage = sl_percentage
-            CustomStrategy.use_sma_cross = strategies.get('smaCross', False)
-            CustomStrategy.use_rsi = strategies.get('rsi', False)
-            CustomStrategy.rsi_params = strategies.get('rsiParams', {'overboughtLevel': 70, 'oversoldLevel': 30})
-
-            # Ejecutar el backtest
-            bt = Backtest(data, CustomStrategy, cash=10000)
-            stats = bt.run()
-
-            # Convertir estadísticas adicionales en un diccionario
-            stats_dict = {
-                'Start': stats['Start'].strftime('%Y-%m-%d'),
-                'End': stats['End'].strftime('%Y-%m-%d'),
-                'Duration': str(stats['Duration']),
-                'Exposure Time [%]': stats['Exposure Time [%]'],
-                'Equity Final [$]': stats['Equity Final [$]'],
-                'Equity Peak [$]': stats['Equity Peak [$]'],
-                'Return [%]': stats['Return [%]'],
-                'Buy & Hold Return [%]': stats['Buy & Hold Return [%]'],
-                'Return (Ann.) [%]': stats['Return (Ann.) [%]'],
-                'Volatility (Ann.) [%]': stats['Volatility (Ann.) [%]'],
-                'Sharpe Ratio': stats['Sharpe Ratio'],
-                'Sortino Ratio': stats['Sortino Ratio'],
-                'Calmar Ratio': stats['Calmar Ratio'],
-                'Max. Drawdown [%]': stats['Max. Drawdown [%]'],
-                'Avg. Drawdown [%]': stats['Avg. Drawdown [%]'],
-                'Max. Drawdown Duration': str(stats['Max. Drawdown Duration']),
-                'Avg. Drawdown Duration': str(stats['Avg. Drawdown Duration']),
-                'Trades': stats['_trades'].to_dict(orient='records'),
-                'Equity Curve': stats['_equity_curve'].to_dict(orient='records')
-            }
-
-            return JsonResponse(stats_dict)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON.'}, status=400)
         except Exception as e:
@@ -607,7 +343,7 @@ def get_ema_signals(request):
         ema4 = int(request.GET.get('ema4', 4))
         ema9 = int(request.GET.get('ema9', 9))
         ema18 = int(request.GET.get('ema18', 18))
-        use_triple = request.GET.get('use_triple', 'false').lower() == 'true'
+        use_triple = request.GET.get('useTriple', 'false').lower() == 'true'
 
         # Generar una clave única para la caché basada en los parámetros
         cache_key = hashlib.md5(
@@ -623,16 +359,21 @@ def get_ema_signals(request):
         try:
             if use_triple:
                 signals_with_data = obtener_ema_signals(tickers, [ema4, ema9, ema18], use_triple=True)
+
             else:
                 signals_with_data = obtener_ema_signals(tickers, [ema4, ema9], use_triple=False)
 
-            # Crear el resultado
+
+            # Asegúrate de que signals_with_data es serializable, de ser necesario convierte los objetos
+            # Si es una lista de diccionarios, debería funcionar bien
+
+            # Crear el resultado como un diccionario que incluya las señales
             result = {"signals": signals_with_data}
 
             # Almacenar el resultado en caché (ej. durante 1 hora)
             cache.set(cache_key, result, timeout=3600)
 
-            # Retornar el resultado
+            # Retornar el resultado como un JSON
             return JsonResponse(result)
 
         except Exception as e:
