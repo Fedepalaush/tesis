@@ -71,10 +71,10 @@ def evaluar_cruce(triple):
         return 1  # Señal de compra
     return 0  # No hay señal
 
-# Función principal para obtener señales de cruce
 def obtener_ema_signals(tickers, ema_periods, use_triple):
     signals = []  # Almacenar las señales generadas
-    for ticker in tickers[:20]:
+
+    for ticker in tickers[:50]:
         # Obtener los datos históricos del modelo StockData
         historical_data = StockData.objects.filter(ticker=ticker).order_by('date')
 
@@ -92,6 +92,9 @@ def obtener_ema_signals(tickers, ema_periods, use_triple):
             'volume': 'Volume'
         }, inplace=True)
 
+        # **Eliminar filas con datos faltantes**
+        df.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+
         # Calcular las EMAs y detectar cruces
         cruces_detectados = calculate_ema(df, ema_periods, use_triple)
         resultado_cruce = evaluar_cruce(cruces_detectados)
@@ -101,23 +104,26 @@ def obtener_ema_signals(tickers, ema_periods, use_triple):
 
         # Si hay una señal válida, preparar los datos para graficar
         if signal_text:
-            # Datos de velas y EMAs para graficar
+            # Validar las columnas de velas
             candles = df[['Date', 'Open', 'High', 'Low', 'Close']].tail(60).to_dict(orient='records')
 
-            # Seleccionar las columnas de las EMAs en función de si es doble o triple cruce
+            # Validar columnas de EMAs dependiendo del tipo de cruce
             if use_triple:
+                # Asegúrate de que las columnas de EMAs estén completas
+                df.dropna(subset=['EMA_4', 'EMA_9', 'EMA_18'], inplace=True)
                 ema_values = df[['Date', 'EMA_4', 'EMA_9', 'EMA_18']].tail(60).to_dict(orient='records')
             else:
+                df.dropna(subset=['EMA_short', 'EMA_long'], inplace=True)
                 ema_values = df[['Date', 'EMA_short', 'EMA_long']].tail(60).to_dict(orient='records')
-                
-            df.dropna(inplace=True)    
-            print(df)
-            # Añadir la señal a la lista
-            signals.append({
-                "ticker": ticker,
-                "signal": signal_text,
-                "candles": candles,
-                "ema_values": ema_values
-            })
+
+            # **Añadir validaciones opcionales**
+            if candles and ema_values:
+                # Añadir la señal a la lista
+                signals.append({
+                    "ticker": ticker,
+                    "signal": signal_text,
+                    "candles": candles,
+                    "ema_values": ema_values
+                })
 
     return signals
