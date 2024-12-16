@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Plot from "react-plotly.js";
-import { tickersBM } from "../ticker";
+import { tickersBM } from '../constants';
+
+
 import BaseLayout from "../components/BaseLayout";
 
 const MediasMoviles = () => {

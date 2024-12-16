@@ -7,7 +7,8 @@ import DonutChart from "../components/DonutChart";
 import { Button } from "@tremor/react";
 import Sidebar, { SidebarItem } from "../components/SidebarComp";
 import { LayoutDashboard, BarChart3 } from "lucide-react";
-import {tickersBM} from '../ticker'
+import { tickersBM } from '../constants';
+
 
 function Home() {
   const [tickers, setTickers] = useState([]);

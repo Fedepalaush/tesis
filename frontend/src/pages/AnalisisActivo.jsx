@@ -4,7 +4,7 @@ import axios from "axios";
 import Plot from "react-plotly.js";
 import { CardUsageExample } from "../components/Card";
 import ReactTooltip from "react-tooltip";
-import { tickersBM } from "../ticker";
+import { tickersBM } from '../constants';
 import GaugeChart from "../components/GaugeChart";
 import Semaforo from "../components/Semaforo";
 

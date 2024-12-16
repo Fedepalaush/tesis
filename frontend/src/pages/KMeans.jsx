@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import Plot from "react-plotly.js";
 import BaseLayout from "../components/BaseLayout";
-import { tickersBM } from "../ticker"; // Import tickersBM from the correct file
+import { tickersBM } from '../constants';
+
 
 const KMeans = () => {
   const [tickers, setTickers] = useState(tickersBM); // Predefined tickers list

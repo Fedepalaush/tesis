@@ -5,7 +5,8 @@ import NavbarComp from '../components/NavbarComp';
 import Sidebar from '../components/SidebarComp';
 import { SidebarItem } from '../components/SidebarComp';
 import { LayoutDashboard, BarChart3, UserCircle, Boxes, Package, Receipt, Settings, LifeBuoy } from 'lucide-react';
-import {tickersBM} from '../ticker'
+import { tickersBM } from '../constants';
+
 
 
 const Correlacion = () => {

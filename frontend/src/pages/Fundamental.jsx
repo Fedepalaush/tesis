@@ -3,7 +3,8 @@ import axios from "axios";
 import BaseLayout from "../components/BaseLayout";
 import { Barchart } from "../components/Barchart"; // Asegúrate de importar correctamente
 import PieChartComponent from "../components/PieChartComponent"; // Importa el componente de gráfico de torta
-import { tickersBM } from "../ticker";
+import { tickersBM } from '../constants';
+
 
 const Fundamental = () => {
   const [freeCashFlowData, setFreeCashFlowData] = useState([]);
