@@ -49,3 +49,15 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
     throw error;
   }
 };
+
+export const fetchFundamentalData = async (ticker) => {
+  try {
+    const response = await axios.get("http://localhost:8000/get_fundamental/", {
+      params: { ticker },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching fundamental data:", error);
+    throw error;
+  }
+};

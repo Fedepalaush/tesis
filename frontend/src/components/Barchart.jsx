@@ -2,9 +2,9 @@ import React from "react";
 import { BarChart } from "@tremor/react";
 
 const dataFormatter = (number) =>
-  Intl.NumberFormat('us').format(number).toString();
+  Intl.NumberFormat("us").format(number).toString();
 
-export const Barchart = ({ data, type, stacked = false }) => {
+const Barchart = ({ data, type, stacked = false }) => {
   // Si stacked es true, configura varias categorías para el gráfico apilado.
   const categories = stacked
     ? ["cash_equivalents", "receivables", "inventory", "other_current_assets"]
@@ -27,3 +27,5 @@ export const Barchart = ({ data, type, stacked = false }) => {
     </div>
   );
 };
+
+export default Barchart;
