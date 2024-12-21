@@ -32,3 +32,20 @@ export const fetchPivotPoints = async (ticker) => {
       throw error;
     }
   };
+
+// Función para obtener la matriz de correlación
+export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate) => {
+  const tickersQueryString = selectedTickers
+    .map((ticker) => `tickers=${ticker}`)
+    .join('&');
+
+  try {
+    const response = await axios.get(
+      `http://localhost:8000/api/get_correlation_matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener la matriz de correlación:', error);
+    throw error;
+  }
+};
