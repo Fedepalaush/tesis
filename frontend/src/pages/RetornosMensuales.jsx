@@ -3,6 +3,7 @@ import BaseLayout from "../components/BaseLayout";
 import DataSelector from "../components/DataSelector";
 import HeatmapChart from "../components/HeatmapChart";
 import { tickersBM } from '../constants';
+import { fetchMonthlyReturns } from "../api";
 
 const MonthlyReturnsChart = () => {
   const [data, setData] = useState([]);
@@ -12,31 +13,29 @@ const MonthlyReturnsChart = () => {
   const [tickers, setTickers] = useState(tickersBM);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/get_retornos_mensuales?ticker=${selectedTicker}&years=${selectedYears}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok " + response.statusText);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setData(data.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("There was a problem with the fetch operation:", error);
-        setLoading(false);
-      });
-  }, [selectedTicker, selectedYears]);
+    const fetchData = async () => {
+      setLoading(true); // Mostrar indicador de carga
+      try {
+        const responseData = await fetchMonthlyReturns(selectedTicker, selectedYears); // Llamar a la función de `api.js`
+        setData(responseData.data); // Asignar los datos al estado
+      } catch (error) {
+        console.error("Error al obtener los retornos mensuales:", error);
+      } finally {
+        setLoading(false); // Ocultar indicador de carga
+      }
+    };
+
+    fetchData();
+  }, [selectedTicker, selectedYears]); // Ejecutar cada vez que cambian estos valores
 
   const handleTickerChange = (event) => {
     setSelectedTicker(event.target.value);
-    setLoading(true); // Set loading to true when changing ticker
+    setLoading(true); // Activar carga al cambiar ticker
   };
 
   const handleYearsChange = (event) => {
     setSelectedYears(event.target.value);
-    setLoading(true); // Set loading to true when changing years
+    setLoading(true); // Activar carga al cambiar años
   };
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];

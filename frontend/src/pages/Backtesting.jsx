@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import axios from "axios";
 import BaseLayout from "../components/BaseLayout";
 import FormBacktesting from "../components/FormBacktesting";
 import StrategiesForm from "../components/StrategiesForm";
 import TradesTable from "../components/TradesTable";
+import { runBacktest } from "../api"; // Importa la función runBacktest
 
 function Backtest() {
   const [formData, setFormData] = useState({
@@ -73,10 +73,10 @@ function Backtest() {
     }
   };
 
-  const runBacktest = async () => {
+  const runBacktestHandler = async () => {
     setIsLoading(true); // Activa el estado de carga
     try {
-      const response = await axios.post("http://localhost:8000/run_backtest/", formData);
+      const response = await runBacktest(formData); // Llama a la función desde api.js
       console.log(response.data); // Ver la respuesta completa
       if (response.data && response.data.Trades) {
         setResult(response.data.Trades); // Guarda los trades recibidos
@@ -98,7 +98,7 @@ function Backtest() {
         <h1 className="text-white text-xl font-semibold mb-4">Backtest Configuración</h1>
         <FormBacktesting formData={formData} handleChange={handleChange} />
         <StrategiesForm formData={formData} handleChange={handleChange} />
-        <button onClick={runBacktest} className="bg-blue-600 text-white px-4 py-2 rounded-md mt-4">
+        <button onClick={runBacktestHandler} className="bg-blue-600 text-white px-4 py-2 rounded-md mt-4">
           Ejecutar Backtest
         </button>
         <div className="mt-6"> {/* Añadido margen vertical para separar el contenido */}

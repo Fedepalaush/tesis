@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import Plot from "react-plotly.js";
 import { tickersBM } from '../constants';
-
-
+import { fetchEMASignals } from "../api"; // Importa la función de API
 import BaseLayout from "../components/BaseLayout";
 
 const MediasMoviles = () => {
@@ -24,23 +22,13 @@ const MediasMoviles = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:8000/get_ema_signals/", {
-        params: {
-          tickers,
-          ema4,
-          ema9,
-          ema18: useTriple ? ema18 : undefined,
-          useTriple,
-        },
-      });
-
-      const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-      console.log(responseData);
-      setSignals(response.data.signals);
+      const responseData = await fetchEMASignals(tickers, ema4, ema9, ema18, useTriple);
+      setSignals(responseData.signals);
     } catch (error) {
       console.error("Error fetching signals:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

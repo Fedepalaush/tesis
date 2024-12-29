@@ -24,6 +24,11 @@ class ActivoSerializer(serializers.ModelSerializer):
         model = Activo
         fields = ("id", 'ticker', "cantidad", 'precioCompra', 'precioActual', 'precioVenta', 'fechaCompra', 'fechaVenta', 'usuario', 'recomendacion', 'porcentaje_cartera')
         extra_kwargs = {'usuario': {"read_only": True}}
+        
+    def validate_cantidad(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("La cantidad debe ser un número positivo.")
+        return value
 
     def get_recomendacion(self, obj):
         recomendacion = obj.get('recomendacion') if isinstance(obj, dict) else getattr(obj, 'recomendacion', None)

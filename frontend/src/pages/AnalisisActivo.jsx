@@ -7,6 +7,7 @@ import ReactTooltip from "react-tooltip";
 import { tickersBM } from '../constants';
 import GaugeChart from "../components/GaugeChart";
 import Semaforo from "../components/Semaforo";
+import { fetchActivoAnalysis } from '../api'; // Adjust the path if necessary
 
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
@@ -53,7 +54,8 @@ const AnalisisActivo = () => {
   
   useEffect(() => {
     console.log('Aca estoyyy')
-    console.log(data)
+    console.log(data.data)
+    console.log('pase dif')
     if (data.length > 0) {
       console.log(data);
       const dates = data.map((item) => item.date);
@@ -88,9 +90,9 @@ const AnalisisActivo = () => {
       setEmaMediaSemaforo(emaMediaSemaforo);
       setEmaLentaSemaforo(emaLentaSemaforo);
       setTripleEma(tripleEma);
-
+      
       console.log(emaRapidaSemaforo);
-
+      
       const lastRsi = rsi.slice(-1)[0];
       const lastEma = ema200.slice(-1)[0];
       const lastClose = close.slice(-1)[0];
@@ -108,7 +110,6 @@ const AnalisisActivo = () => {
       const diferenciaSemana = closeLastWeek !== undefined ? ((lastClose - closeLastWeek) / closeLastWeek) * 100 : undefined;
 
       const diferenciaEma = ((lastEma21 - lastEma9) / lastEma9) * 100 * -1;
-
       // Verifica si existe algún 1
       const hasOne = lastTripleEma.some((item) => item.Cruce === 1);
 
@@ -143,14 +144,8 @@ const AnalisisActivo = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/get_activo/", {
-          params: {
-            ticker: ticker,
-            start_date: startDate,
-            end_date: endDate,
-          },
-        });
-        setData(response.data.data);
+        const result = await fetchActivoAnalysis(ticker, startDate, endDate);
+        setData(result.data.data);
         setError(null); // Clear previous errors if the fetch is successful
       } catch (error) {
         if (error.response && error.response.status === 400) {
@@ -162,7 +157,9 @@ const AnalisisActivo = () => {
       }
     };
 
-    fetchData();
+    if (ticker && startDate && endDate) {
+      fetchData();
+    }
   }, [ticker, startDate, endDate]);
 
   const handleTickerChange = (e) => {

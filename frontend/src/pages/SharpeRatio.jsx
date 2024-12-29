@@ -5,6 +5,7 @@ import SectorSelector from "../components/SectorSelector";
 import YearsSelectors from "../components/YearsSelector";
 import SharpePlotGraph from "../components/SharpePlotGraph";
 import LoadingIndicator from "../components/LoadingIndicator";
+import { fetchSharpeRatioData } from "../api"; // Importa la función desde api.js
 
 const SharpePlot = () => {
   const [sharpeData, setSharpeData] = useState([]);
@@ -20,17 +21,10 @@ const SharpePlot = () => {
   const fetchData = async (sector, xYears, yYears) => {
     setLoading(true); // Indicar que la carga está en progreso
     try {
-      const response = await fetch(
-        `http://localhost:8000/sharpe-ratio/?sector=${sector}&x_years=${xYears}&y_years=${yYears}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setSharpeData(data.sharpe_data);
-      } else {
-        console.error("Error al obtener datos desde el servidor");
-      }
+      const data = await fetchSharpeRatioData(sector, xYears, yYears);
+      setSharpeData(data);
     } catch (error) {
-      console.error("Error de red:", error);
+      console.error("Error al obtener datos del Sharpe Ratio:", error);
     } finally {
       setLoading(false); // Indicar que la carga ha terminado
     }

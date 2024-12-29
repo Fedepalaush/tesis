@@ -3,6 +3,7 @@ import axios from "axios";
 import Plot from "react-plotly.js";
 import BaseLayout from "../components/BaseLayout";
 import { tickersBM } from '../constants';
+import { obtenerDatosAgrupamiento } from "../api";  // Importa la función de la API
 
 
 const KMeans = () => {
@@ -49,22 +50,15 @@ const KMeans = () => {
     setNotification("");
   };
 
-  // Function to fetch data from the backend
+  // Llamada para obtener datos de agrupamiento
   const obtenerDatos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("http://localhost:8000/agrupamiento/", {
-        params: {
-          tickers: selectedTickers.join(","), // Send selected tickers
-          parametros: parametrosSeleccionados.join(","),
-          start_date: startDate,
-          end_date: endDate,
-        },
-      });
-      setAcciones(response.data);
+      const data = await obtenerDatosAgrupamiento(selectedTickers, parametrosSeleccionados, startDate, endDate);
+      setAcciones(data);  // Asigna los datos obtenidos al estado
     } catch (error) {
-      setError("Error al obtener los datos del servidor");
+      setError(error.message);  // Muestra el mensaje de error
     } finally {
       setLoading(false);
     }
