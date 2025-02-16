@@ -380,3 +380,42 @@ def get_ema_signals(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Only GET requests are allowed."}, status=400)
+
+
+import yfinance as yf
+from datetime import datetime, timedelta
+from django.http import JsonResponse
+
+import yfinance as yf
+from datetime import datetime
+from django.http import JsonResponse
+
+def obtener_dividendos(request):
+    tickers = request.GET.getlist("tickers")  # Obtener lista de tickers
+    resultados = {}
+    año_anterior = datetime.now().year - 1  # Año pasado
+    # Cambiar la estructura de dividendos_por_mes para almacenar el total y los detalles de las empresas
+    dividendos_por_mes = {i: {"total": 0, "detalles": []} for i in range(12)}  # Diccionario para almacenar dividendos por mes
+
+    for ticker in tickers:
+        try:
+            accion = yf.Ticker(ticker)
+            dividendos = accion.dividends
+
+            if dividendos.empty:
+                resultados[ticker] = {"error": "No se encontraron dividendos"}
+                continue
+
+            for fecha, monto in dividendos.items():
+                fecha_pago = fecha.to_pydatetime()
+                if fecha_pago.year == año_anterior:
+                    mes_pago = fecha_pago.month - 1  # Convertir a índice 0-11
+                    dividendos_por_mes[mes_pago]["total"] += monto  # Sumar montos de dividendos
+                    dividendos_por_mes[mes_pago]["detalles"].append({"empresa": ticker, "monto": monto})  # Guardar los detalles
+
+        except Exception as e:
+            resultados[ticker] = {"error": str(e)}
+            continue
+
+    return JsonResponse({"dividendos": dividendos_por_mes})
+

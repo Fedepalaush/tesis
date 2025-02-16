@@ -26,6 +26,7 @@ import Backtesting from "./pages/Backtesting";
 import SoportesResistencias from "./pages/SoportesResistencias";
 import KMeans from "./pages/KMeans";
 import MediasMoviles from "./pages/MediasMoviles";
+import DividendCalendar from "./pages/CalendarioDividendos";
 
 function Logout() {
   localStorage.clear();
@@ -102,6 +103,7 @@ function App() {
         <Route path="/soportesResistencias" element={<SoportesResistencias />} />
         <Route path="/backtesting" element={<Backtesting />} />
         <Route path="/mediasMoviles" element={<MediasMoviles />} />
+        <Route path="/calendarioDividendos" element={<DividendCalendar/>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/*       <div>

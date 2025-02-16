@@ -33,5 +33,6 @@ urlpatterns = [
     path('get_pivot_points/', views.get_pivot_points, name='get_pivot_points'),
     path('agrupamiento/', views.obtener_agrupamiento, name='obtener_agrupamiento'),
     path('get_ema_signals/', views.get_ema_signals, name='get_ema_signals'),
+    path('obtener_dividendos/', views.obtener_dividendos, name='obtener_dividendos'),
     
 ]

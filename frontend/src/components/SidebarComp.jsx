@@ -46,6 +46,7 @@ export default function Sidebar({ children }) {
                 { text: "Soportes/Resistencias", href: "/soportesResistencias" },
                 { text: "Heatmap Retornos", href: "/RetornosMensuales" },
                 { text: "Medias Moviles", href: "/mediasMoviles" },
+                { text: "Calendario Dividendos", href: "/calendarioDividendos" },
               ]}
             />
             <SidebarItem icon={<TestTubeDiagonal />} text="Backtesting" href="/backtesting" />
