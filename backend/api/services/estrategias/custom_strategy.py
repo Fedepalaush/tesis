@@ -94,3 +94,12 @@ class StrategyContext:
         bt = Backtest(data, self.strategy, cash=10000, commission=.002)
         stats = bt.run()
         return stats
+
+    def set_strategy(self, strategy):
+        self.strategy = strategy
+
+    def get_strategy(self):
+        return self.strategy
+
+    def update_strategy_params(self, **params):
+        self.strategy.set_strategy_params(**params)
