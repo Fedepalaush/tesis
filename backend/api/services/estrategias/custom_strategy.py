@@ -3,7 +3,6 @@ import pandas_ta as ta
 import pandas as pd
 from backtesting.lib import crossover
 
-
 class CustomStrategy(Strategy):
     rapida = 10
     lenta = 20
@@ -27,15 +26,12 @@ class CustomStrategy(Strategy):
         last_close = self.data.Close[-1]
 
         if self.position:
-            # Si hay una posición abierta, verificar condiciones de cierre
             if (self.use_sma_cross and crossover(self.ema_lenta, self.ema_rapida)) or (self.use_rsi and self.rsi > self.rsi_params['overboughtLevel']):
                 self.position.close()
             return
 
-        # Condiciones de compra
         if self.use_sma_cross and self.use_rsi:
             if crossover(self.ema_rapida, self.ema_lenta) and (self.rsi < self.rsi_params['oversoldLevel']):
-                
                 self.buy(tp=last_close * (1 + self.tp_percentage), sl=last_close * (1 - self.sl_percentage))
         elif self.use_sma_cross:
             if crossover(self.ema_rapida, self.ema_lenta):
@@ -43,3 +39,37 @@ class CustomStrategy(Strategy):
         elif self.use_rsi:
             if self.rsi < self.rsi_params['oversoldLevel']:
                 self.buy(tp=last_close * (1 + self.tp_percentage), sl=last_close * (1 - self.sl_percentage))
+
+    def set_strategy_params(self, rapida=None, lenta=None, tp_percentage=None, sl_percentage=None, use_sma_cross=None, use_rsi=None, rsi_params=None):
+        if rapida is not None:
+            self.rapida = rapida
+        if lenta is not None:
+            self.lenta = lenta
+        if tp_percentage is not None:
+            self.tp_percentage = tp_percentage
+        if sl_percentage is not None:
+            self.sl_percentage = sl_percentage
+        if use_sma_cross is not None:
+            self.use_sma_cross = use_sma_cross
+        if use_rsi is not None:
+            self.use_rsi = use_rsi
+        if rsi_params is not None:
+            self.rsi_params = rsi_params
+
+    @staticmethod
+    def create_sma_cross_strategy(rapida, lenta, tp_percentage, sl_percentage):
+        strategy = CustomStrategy()
+        strategy.set_strategy_params(rapida=rapida, lenta=lenta, tp_percentage=tp_percentage, sl_percentage=sl_percentage, use_sma_cross=True, use_rsi=False)
+        return strategy
+
+    @staticmethod
+    def create_rsi_strategy(tp_percentage, sl_percentage, rsi_params):
+        strategy = CustomStrategy()
+        strategy.set_strategy_params(tp_percentage=tp_percentage, sl_percentage=sl_percentage, use_sma_cross=False, use_rsi=True, rsi_params=rsi_params)
+        return strategy
+
+    @staticmethod
+    def create_combined_strategy(rapida, lenta, tp_percentage, sl_percentage, rsi_params):
+        strategy = CustomStrategy()
+        strategy.set_strategy_params(rapida=rapida, lenta=lenta, tp_percentage=tp_percentage, sl_percentage=sl_percentage, use_sma_cross=True, use_rsi=True, rsi_params=rsi_params)
+        return strategy

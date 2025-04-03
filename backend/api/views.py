@@ -29,7 +29,7 @@ from django.db.models import Q
 from django.core.cache import cache
 import hashlib
 from .services.ema_logic import obtener_ema_signals
-from .services.activo_service import process_activo
+from .services.activo_service import ActivoService
 from . services.fundamental import get_fundamental_data
 from .services.backtesting import run_backtest_service
 from .services.retornos_mensuales import calcular_retornos_mensuales
@@ -41,8 +41,21 @@ from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
 from django.http import JsonResponse
 import json
 
-      
+activo_service = ActivoService()
+
+def cache_decorator(func):
+    def wrapper(*args, **kwargs):
+        cache_key = f"{func.__name__}_{args}_{kwargs}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return cached_data
+        result = func(*args, **kwargs)
+        cache.set(cache_key, result, timeout=3600)
+        return result
+    return wrapper
+
 @csrf_exempt
+@cache_decorator
 def get_activo(request):
     if request.method == 'GET':
         ticker = request.GET.get('ticker')
@@ -83,6 +96,7 @@ def get_activo(request):
     return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 @csrf_exempt
+@cache_decorator
 def get_retornos_mensuales(request):
     if request.method == 'GET':
         try:
@@ -114,6 +128,7 @@ def get_retornos_mensuales(request):
     return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
 @csrf_exempt
+@cache_decorator
 def get_fundamental_info(request):
     if request.method == 'GET':
         ticker = request.GET.get('ticker', None)
@@ -158,7 +173,7 @@ class ActivoListCreate(generics.ListCreateAPIView):
 
         for activo in activos:
             # Delegar el procesamiento al servicio
-            processed_data = process_activo(activo)
+            processed_data = activo_service.process_activo(activo)
             if processed_data:
                 activo.precioActual = processed_data['precioActual']
                 activo.recomendacion = processed_data['recomendacion']
@@ -205,6 +220,7 @@ class ActivoDelete(generics.DestroyAPIView):
         return Activo.objects.filter(usuario=user)  
 
 @csrf_exempt
+@cache_decorator
 def get_correlation_matrix(request):
     if request.method == 'GET':
         tickers = request.GET.getlist('tickers')
@@ -254,6 +270,7 @@ def get_correlation_matrix(request):
     else:
         return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
+@cache_decorator
 def sharpe_ratio(request):
     if request.method == 'GET':
         # Parámetros
@@ -297,6 +314,7 @@ def run_backtest(request):
         return JsonResponse({'error': 'Only POST requests are allowed.'}, status=400)
     
 
+@cache_decorator
 def get_pivot_points(request):
     # Obtener el ticker de los parámetros de la solicitud
     ticker = request.GET.get('ticker', 'AAPL')  # AAPL como valor predeterminado si no se proporciona
@@ -311,6 +329,7 @@ def get_pivot_points(request):
     return JsonResponse(pivot_data, safe=False)
 
 
+@cache_decorator
 def obtener_agrupamiento(request):
     tickers_param = request.GET.get('tickers')
     tickers = tickers_param.split(',')
@@ -321,7 +340,7 @@ def obtener_agrupamiento(request):
     # Generar clave de caché
     cache_key = hashlib.md5(f"agrupamiento_{','.join(tickers)}_{start_date}_{end_date}_{','.join(parametros_seleccionados)}".encode()).hexdigest()
     cached_data = cache.get(cache_key)
-    if cached_data:
+    if (cached_data):
         return JsonResponse(cached_data, safe=False)
 
     try:
@@ -336,6 +355,7 @@ def obtener_agrupamiento(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
+@cache_decorator
 def get_ema_signals(request):
     if request.method == "GET":
         # Recibir tickers y periodos de EMA desde la solicitud
@@ -390,6 +410,7 @@ import yfinance as yf
 from datetime import datetime
 from django.http import JsonResponse
 
+@cache_decorator
 def obtener_dividendos(request):
     tickers = request.GET.getlist("tickers")  # Obtener lista de tickers
     resultados = {}
