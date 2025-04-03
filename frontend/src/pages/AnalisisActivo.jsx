@@ -8,10 +8,10 @@ import { tickersBM } from '../constants';
 import GaugeChart from "../components/GaugeChart";
 import Semaforo from "../components/Semaforo";
 import { fetchActivoAnalysis } from '../api'; // Adjust the path if necessary
+import { Maybe, Either } from '../utils/monads'; // Importing Maybe and Either monads
 
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
-
 
   const [tickers, setTickers] = useState(tickersBM);
 

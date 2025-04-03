@@ -73,3 +73,24 @@ class CustomStrategy(Strategy):
         strategy = CustomStrategy()
         strategy.set_strategy_params(rapida=rapida, lenta=lenta, tp_percentage=tp_percentage, sl_percentage=sl_percentage, use_sma_cross=True, use_rsi=True, rsi_params=rsi_params)
         return strategy
+
+class StrategyFactory:
+    @staticmethod
+    def create_strategy(strategy_type, **kwargs):
+        if strategy_type == 'sma_cross':
+            return CustomStrategy.create_sma_cross_strategy(**kwargs)
+        elif strategy_type == 'rsi':
+            return CustomStrategy.create_rsi_strategy(**kwargs)
+        elif strategy_type == 'combined':
+            return CustomStrategy.create_combined_strategy(**kwargs)
+        else:
+            raise ValueError(f"Unknown strategy type: {strategy_type}")
+
+class StrategyContext:
+    def __init__(self, strategy):
+        self.strategy = strategy
+
+    def execute(self, data):
+        bt = Backtest(data, self.strategy, cash=10000, commission=.002)
+        stats = bt.run()
+        return stats

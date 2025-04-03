@@ -21,3 +21,15 @@ class StockDataRepository:
         Obtiene datos para un ticker específico dentro de un rango de fechas.
         """
         return StockData.objects.filter(ticker=ticker, date__range=(start_date, end_date)).order_by('date')
+    
+    def get_latest_data(self, ticker):
+        """
+        Obtiene el dato más reciente para un ticker específico.
+        """
+        return StockData.objects.filter(ticker=ticker).order_by('-date').first()
+
+    def get_data_by_volume(self, ticker, min_volume):
+        """
+        Obtiene datos para un ticker específico con un volumen mínimo.
+        """
+        return StockData.objects.filter(ticker=ticker, volume__gte=min_volume).order_by('date')
