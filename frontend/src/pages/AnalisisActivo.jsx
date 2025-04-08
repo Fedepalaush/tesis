@@ -63,6 +63,7 @@ const AnalisisActivo = () => {
       const high = data.map((item) => item.high_price);
       const low = data.map((item) => item.low_price);
       const close = data.map((item) => item.close_price);
+      
       const rsi = data.map((item) => item.rsi);
       const ema200 = data.map((item) => item.ema_200);
       const ema9 = data.map((item) => item.ema_9);
@@ -75,7 +76,6 @@ const AnalisisActivo = () => {
       const tripleEma = data.map((item) => item.tripleEma);
 
       setDates(dates);
-      console.log(dates)
       setOpen(open);
       setHigh(high);
       setLow(low);
@@ -105,7 +105,11 @@ const AnalisisActivo = () => {
       const lastEmaLentaSemaforo = parseFloat(emaLentaSemaforo.slice(-1)[0]);
       const lastTripleEma = tripleEma.slice(-1)[0];
       const closeYesterday = close.slice(-2)[0]; // Precio de cierre del día anterior
+      console.log('close' + lastClose)
+      console.log('close' + closeYesterday)
+
       const diferenciaHoy = ((lastClose - closeYesterday) / closeYesterday) * 100;
+      
       const closeLastWeek = close.length >= 5 ? close.slice(-5)[0] : undefined; // Precio de cierre hace una semana
       const diferenciaSemana = closeLastWeek !== undefined ? ((lastClose - closeLastWeek) / closeLastWeek) * 100 : undefined;
 

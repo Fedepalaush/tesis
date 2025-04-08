@@ -43,21 +43,30 @@ def fetch_historical_data(ticker, start_date, end_date):
     return df
 
 def calculate_analytics(df):
+    pd.set_option('display.max_columns', None)
     # Calcular indicadores y agregar columnas necesarias
     df['RSI'] = calculate_rsi(df)  # Reemplaza con tu lógica real de RSI
     df['EMA_200'] = calculate_ema(df, 200)  # Reemplaza con tu lógica real de EMA
     df['EMA_21'] = calculate_ema(df, 21)
     df['EMA_9'] = calculate_ema(df, 9)
 
-    # Tendencias y otras métricas
+   # Tendencias y otras métricas
     tendencia219 = check_ema_trend(df)
+
+    
     emaRapidaSemaforo = calculate_signal(df, short_span=9, long_span=21, days_to_consider=3)
     emaMediaSemaforo = calculate_signal(df, short_span=50, long_span=100, days_to_consider=5)
     emaLentaSemaforo = calculate_signal(df, short_span=50, long_span=200, days_to_consider=9)
+
     tripleEma = calculate_triple_ema(df)
+
     scoreEma = calculate_score(df)
 
+
     # Limpiar datos
+    
+   
+
     df.dropna(inplace=True)
     data = []
     for _, row in df.iterrows():

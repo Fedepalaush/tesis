@@ -24,17 +24,16 @@ def detectar_cruce(ema4_prev, ema9_prev, ema18_prev, ema4_curr, ema9_curr, ema18
     return 0
 
 def calculate_score(data):
-    # Calcular las medias móviles
-    data['SMA_50'] = data['close_price'].rolling(window=50).mean()
-    data['SMA_200'] = data['close_price'].rolling(window=200).mean()
+    # Calcular EMAs
+    data['EMA_50'] = data['close_price'].ewm(span=50, adjust=False).mean()
+    data['EMA_200'] = data['close_price'].ewm(span=200, adjust=False).mean()
     data['EMA_9'] = data['close_price'].ewm(span=9, adjust=False).mean()
     data['EMA_21'] = data['close_price'].ewm(span=21, adjust=False).mean()
     data['EMA_12'] = data['close_price'].ewm(span=12, adjust=False).mean()
     data['EMA_26'] = data['close_price'].ewm(span=26, adjust=False).mean()
-
-    # Señales de cruce
-    data['Golden_Cross'] = np.where((data['SMA_50'] > data['SMA_200']), 1, 0)
-    data['Death_Cross'] = np.where((data['SMA_50'] < data['SMA_200']), -1, 0)
+    # Señales de cruce: ahora usando EMAs en lugar de SMA
+    data['Golden_Cross'] = np.where((data['EMA_50'] > data['EMA_200']), 1, 0)
+    data['Death_Cross'] = np.where((data['EMA_50'] < data['EMA_200']), -1, 0)
     data['Cross_9_21'] = np.where((data['EMA_9'] > data['EMA_21']), 1, -1)
     data['Cross_12_26'] = np.where((data['EMA_12'] > data['EMA_26']), 1, -1)
     

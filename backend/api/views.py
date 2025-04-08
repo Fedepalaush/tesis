@@ -66,14 +66,19 @@ def get_activo(request):
 
         if cached_data:
             # Retornar los datos desde el caché si están disponibles
+            print('CACHEADAAA')
+            print(cached_data)
             return JsonResponse({'data': cached_data})
 
         # Si los datos no están en caché, proceder con el cálculo
         try:
             df = fetch_historical_data(ticker, start_date, end_date)
+            print('NUEVAAA')
+
             if df.empty:
                 return JsonResponse({'error': 'No data found for the provided ticker and date range.'}, status=404)
             data = calculate_analytics(df)
+            print(data)
             cache.set(cache_key, data, timeout=3600)  # Cache por 1 hora
             return JsonResponse({'data': data})
 
@@ -419,3 +424,13 @@ def obtener_dividendos(request):
 
     return JsonResponse({"dividendos": dividendos_por_mes})
 
+
+
+def last_execution_date(request):
+    """ Devuelve la última fecha de carga de datos. """
+    last_record = StockData.objects.order_by('-date').first()
+
+    if last_record:
+        return JsonResponse({"last_execution": last_record.date.strftime('%Y-%m-%d %H:%M:%S')})
+    else:
+        return JsonResponse({"last_execution": "No hay datos disponibles"})
