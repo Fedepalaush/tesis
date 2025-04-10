@@ -12,6 +12,7 @@ const SoportesResistencias = () => {
   const [limites, setLimites] = useState();
   const [selectedTicker, setSelectedTicker] = useState("AAPL");
   const [lastExecution, setLastExecution] = useState(null);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,12 +21,6 @@ const SoportesResistencias = () => {
         setData(response.data);
         setHistorical(response.historical);
         setLimites(response.limites);
-
-        // Obtener la fecha de la última ejecución
-        const execResponse = await fetch("http://localhost:8000/last-execution/");
-        const execData = await execResponse.json();
-        setLastExecution(execData.last_execution);
-        console.log(lastExecution)
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -33,6 +28,24 @@ const SoportesResistencias = () => {
 
     fetchData();
   }, [selectedTicker]);
+
+  useEffect(() => {
+    const fetchExecution = async () => {
+      try {
+        const execResponse = await fetch("http://localhost:8000/last-execution/");
+        const execData = await execResponse.json();
+        setLastExecution(execData.last_execution);
+        setShowToast(true);
+
+        // Ocultar el toast después de 5 segundos
+        setTimeout(() => setShowToast(false), 10000);
+      } catch (error) {
+        console.error("Error al obtener la última ejecución:", error);
+      }
+    };
+
+    fetchExecution();
+  }, []);
 
   if (data.length === 0 || historical.length === 0) {
     return <div>Loading...</div>;
@@ -44,16 +57,18 @@ const SoportesResistencias = () => {
     <BaseLayout>
       <div className="flex flex-col justify-center items-center h-full">
         <TickerSelector selectedTicker={selectedTicker} setSelectedTicker={setSelectedTicker} />
-        
-        {/* Mensaje con la fecha de carga de datos */}
-        {lastExecution && (
-          <p className="text-sm text-gray-500 mt-2">
-            Última actualización de datos: {lastExecution}
-          </p>
-        )}
 
         <CandlestickChart historical={historical} data={data} pivotLines={pivotLines} />
       </div>
+
+      {/* Toast flotante */}
+      {showToast && lastExecution && (
+        <div className="fixed bottom-6 right-6 bg-white border border-gray-300 shadow-lg rounded-lg px-4 py-3 z-50">
+          <p className="text-sm text-gray-800">
+            📅 Última actualización de datos: <strong>{lastExecution}</strong>
+          </p>
+        </div>
+      )}
     </BaseLayout>
   );
 };

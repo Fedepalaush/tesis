@@ -41,6 +41,9 @@ from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
 from django.http import JsonResponse
 import json
 
+import os
+
+LAST_EXECUTION_FILE = "last_execution.log"
       
 @csrf_exempt
 def get_activo(request):
@@ -426,11 +429,20 @@ def obtener_dividendos(request):
 
 
 
-def last_execution_date(request):
-    """ Devuelve la última fecha de carga de datos. """
-    last_record = StockData.objects.order_by('-date').first()
+def get_last_execution():
+    """Obtener la última ejecución desde un archivo."""
+    if os.path.exists(LAST_EXECUTION_FILE):
+        with open(LAST_EXECUTION_FILE, "r") as f:
+            return f.read().strip()
+    return None
 
-    if last_record:
-        return JsonResponse({"last_execution": last_record.date.strftime('%Y-%m-%d %H:%M:%S')})
+from django.http import JsonResponse
+
+def last_execution_date(request):
+    """ Devuelve la última fecha de ejecución desde el archivo log. """
+    last_exec = get_last_execution()
+
+    if last_exec:
+        return JsonResponse({"last_execution": last_exec})
     else:
-        return JsonResponse({"last_execution": "No hay datos disponibles"})
+        return JsonResponse({"last_execution": "No hay registros previos."})
