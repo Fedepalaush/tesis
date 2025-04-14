@@ -37,6 +37,14 @@ from .services.indicators import calculate_indicators, calculate_rsi, calculate_
 from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
 from .services.signals import calculate_signal
 from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
+from .services.entrenamiento import entrenar_modelo_service  # importamos el servicio
+
+from ta.momentum import RSIIndicator
+from ta.trend import EMAIndicator
+from ta.volatility import BollingerBands
+
+from .ml_models.lstm import entrenar_lstm
+from .ml_models.xgboost import entrenar_xgboost
 
 from django.http import JsonResponse
 import json
@@ -69,19 +77,16 @@ def get_activo(request):
 
         if cached_data:
             # Retornar los datos desde el caché si están disponibles
-            print('CACHEADAAA')
             print(cached_data)
             return JsonResponse({'data': cached_data})
 
         # Si los datos no están en caché, proceder con el cálculo
         try:
             df = fetch_historical_data(ticker, start_date, end_date)
-            print('NUEVAAA')
 
             if df.empty:
                 return JsonResponse({'error': 'No data found for the provided ticker and date range.'}, status=404)
             data = calculate_analytics(df)
-            print(data)
             cache.set(cache_key, data, timeout=3600)  # Cache por 1 hora
             return JsonResponse({'data': data})
 
@@ -426,6 +431,27 @@ def obtener_dividendos(request):
             continue
 
     return JsonResponse({"dividendos": dividendos_por_mes})
+
+@csrf_exempt
+def entrenar_modelo(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print("==> Datos recibidos en entrenar_modelo:", data)  # 👈 debug
+
+            resultado = entrenar_modelo_service(data)
+            print(resultado)
+            if 'error' in resultado:
+                return JsonResponse(resultado, status=400)
+
+            return JsonResponse(resultado)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido.'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Solo se permiten solicitudes POST.'}, status=400)
 
 
 

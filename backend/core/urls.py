@@ -35,6 +35,8 @@ urlpatterns = [
     path('get_ema_signals/', views.get_ema_signals, name='get_ema_signals'),
     path('obtener_dividendos/', views.obtener_dividendos, name='obtener_dividendos'),
     
+    path("entrenar/", views.entrenar_modelo),
+    
     path('last-execution/', views.last_execution_date, name='last-execution'),
     
 ]

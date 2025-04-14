@@ -34,6 +34,7 @@ export default function Sidebar({ children }) {
             text="ML" href="/ml" 
             items={[
               { text: "KMeans", href: "/agrupamiento" },
+              { text: "Entrenamiento", href: "/entrenamientoPage" },
 
             ]}
             />
