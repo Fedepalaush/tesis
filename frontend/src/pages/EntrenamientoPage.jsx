@@ -27,6 +27,16 @@ export default function EntrenamientoPage() {
     }
   };
 
+  const getColorClasses = (prediccion) => {
+    if (prediccion === 'Subirá') {
+      return 'bg-green-100 border-green-300 text-green-800';
+    } else if (prediccion === 'Bajará') {
+      return 'bg-red-100 border-red-300 text-red-800';
+    } else {
+      return 'bg-gray-100 border-gray-300 text-gray-800';
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto mt-8 px-4">
       <h1 className="text-2xl font-bold mb-4 text-gray-800">Entrenamiento de Modelos</h1>
@@ -40,6 +50,15 @@ export default function EntrenamientoPage() {
 
       {resultado && !resultado.error && (
         <div className="mt-6">
+          {resultado.prediccion && (
+            <div className={`mb-6 p-4 border rounded ${getColorClasses(resultado.prediccion)}`}>
+              <p className="font-medium">
+                Tendencia esperada en el{" "}
+                {resultado.dias_prediccion === 1 ? 'próximo 1 día' : `próximos ${resultado.dias_prediccion} días`}:{" "}
+                <strong>{resultado.prediccion}</strong>
+              </p>
+            </div>
+          )}
           <IndicadoresModelo resultados={resultado} />
         </div>
       )}
