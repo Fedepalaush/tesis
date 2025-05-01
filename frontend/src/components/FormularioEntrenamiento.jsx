@@ -37,10 +37,13 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
   }, []);
 
   const agregarIndicador = (nombre) => {
+    const permiteMultiples = ['SMA', 'EMA'].includes(nombre);
     const yaExiste = indicadores.some((i) => i.nombre === nombre);
-    if (yaExiste) return;
+    if (!permiteMultiples && yaExiste) return;
 
     const def = indicadoresDisponibles.find((i) => i.nombre === nombre);
+    if (!def) return;
+
     const parametrosIniciales = def.parametros.reduce((acc, param) => {
       acc[param] = '';
       return acc;
@@ -88,26 +91,26 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-800">Entrenamiento de Modelo</h2>
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-gray-900 shadow-lg rounded-lg p-6 space-y-6 text-white">
+      <h2 className="text-2xl font-semibold">Entrenamiento de Modelo</h2>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Ticker</label>
+        <label className="block text-sm font-medium text-gray-300">Ticker</label>
         <input
           type="text"
           value={ticker}
           onChange={(e) => setTicker(e.target.value.toUpperCase())}
-          className="mt-1 block w-full border rounded-md p-2"
+          className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Modelo</label>
+        <label className="block text-sm font-medium text-gray-300">Modelo</label>
         <select
           value={modelo}
           onChange={(e) => setModelo(e.target.value)}
-          className="mt-1 block w-full border rounded-md p-2"
+          className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
         >
           {modelos.map((m) => (
             <option key={m} value={m}>{m}</option>
@@ -117,29 +120,29 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Fecha Inicio</label>
+          <label className="block text-sm font-medium text-gray-300">Fecha Inicio</label>
           <input
             type="date"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
-            className="mt-1 block w-full border rounded-md p-2"
+            className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Fecha Fin</label>
+          <label className="block text-sm font-medium text-gray-300">Fecha Fin</label>
           <input
             type="date"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
-            className="mt-1 block w-full border rounded-md p-2"
+            className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
             required
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Indicadores Técnicos</label>
+        <label className="block text-sm font-medium text-gray-300 mb-2">Indicadores Técnicos</label>
         <div className="flex flex-wrap gap-2 mb-4">
           {indicadoresDisponibles.map((i) => (
             <button
@@ -154,25 +157,25 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
         </div>
 
         {indicadores.map((i, index) => (
-          <div key={index} className="bg-gray-50 border rounded p-3 mb-3">
+          <div key={index} className="bg-gray-800 border border-gray-700 rounded p-3 mb-3">
             <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold text-gray-800">{i.nombre}</span>
+              <span className="font-semibold text-white">{i.nombre}</span>
               <button
                 type="button"
                 onClick={() => eliminarIndicador(index)}
-                className="text-red-500 hover:underline text-sm"
+                className="text-red-400 hover:underline text-sm"
               >
                 Eliminar
               </button>
             </div>
             {Object.entries(i.parametros).map(([param, valor]) => (
               <div key={param} className="mb-2">
-                <label className="block text-sm text-gray-600">{param}</label>
+                <label className="block text-sm text-gray-400">{param}</label>
                 <input
                   type="text"
                   value={valor}
                   onChange={(e) => actualizarParametro(index, param, e.target.value)}
-                  className="mt-1 block w-full border rounded-md p-2"
+                  className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
                 />
               </div>
             ))}
@@ -181,7 +184,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Días a predecir</label>
+        <label className="block text-sm font-medium text-gray-300">Días a predecir</label>
         <input
           type="range"
           min="1"
@@ -190,11 +193,11 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
           onChange={(e) => setDiasPrediccion(e.target.value)}
           className="mt-1 w-full"
         />
-        <div className="flex justify-between text-sm text-gray-600">
+        <div className="flex justify-between text-sm text-gray-400">
           <span>1 día</span>
           <span>10 días</span>
         </div>
-        <div className="text-center text-sm text-gray-600 mt-2">
+        <div className="text-center text-sm text-gray-300 mt-2">
           <strong>{diasPrediccion} días</strong>
         </div>
       </div>

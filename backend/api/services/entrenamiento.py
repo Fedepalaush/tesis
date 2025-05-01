@@ -9,6 +9,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import pandas_ta as ta
+from sklearn.metrics import confusion_matrix
 
 def calcular_indicadores(df, indicadores):
     nuevas_columnas = []
@@ -90,6 +91,8 @@ def entrenar_modelo_service(data):
 
         # 4. Etiquetado: sube o baja en N días
         df["target"] = (df["Close"].shift(-dias_prediccion) > df["Close"]).astype(int)
+        df.dropna(inplace=True)
+        df = df.iloc[:-dias_prediccion]  # <-- Esto evita usar datos con targets que miran más allá del final
 
         # 5. Features: solo columnas generadas por indicadores
         features = [col for col in nuevas_columnas if col in df.columns]
@@ -123,7 +126,8 @@ def entrenar_modelo_service(data):
         clf.fit(X_train, y_train)
         y_pred = clf.predict(X_test)
         print(y_pred)
-
+        
+        cm = confusion_matrix(y_test, y_pred)
         # 9. Métricas
         acc = round(accuracy_score(y_test, y_pred), 4)
         prec = round(precision_score(y_test, y_pred), 4)
@@ -140,8 +144,9 @@ def entrenar_modelo_service(data):
         print(y_train.value_counts())
         # Si la predicción es 1, significa que el modelo predice un aumento en el precio
         prediccion_texto = "Subirá" if ultima_prediccion[0] == 1 else "Bajará"
+        print("CM")
+        print(cm)
         
-        print(prediccion_texto)
 
         return {
             "mensaje": f"Modelo {modelo} entrenado exitosamente para {ticker}",
@@ -154,7 +159,8 @@ def entrenar_modelo_service(data):
             "precision": prec,
             "recall": rec,
             "f1_score": f1,
-            "prediccion": prediccion_texto  # Agregar este campo para la predicción
+            "prediccion": prediccion_texto,  # Agregar este campo para la predicción
+            "confusion_matrix": cm.tolist(),
         }
 
     except Exception as e:
