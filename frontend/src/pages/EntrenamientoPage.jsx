@@ -42,7 +42,7 @@ export default function EntrenamientoPage() {
   return (
     <BaseLayout>
       <div className="max-w-3xl mx-auto mt-8 px-4">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">Entrenamiento de Modelos</h1>
+        <h1 className="text-2xl font-bold mb-4 text-slate-50">Entrenamiento de Modelos</h1>
         <FormularioEntrenamiento onSubmit={manejarEnvio} loading={loading} />
 
         {resultado?.error && <div className="mt-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded">{resultado.error}</div>}

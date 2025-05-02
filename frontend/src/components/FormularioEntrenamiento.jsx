@@ -92,9 +92,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-gray-900 shadow-lg rounded-lg p-6 space-y-6 text-white">
-      <h2 className="text-2xl font-semibold">Entrenamiento de Modelo</h2>
-
-      <div>
+     <div>
         <label className="block text-sm font-medium text-gray-300">Ticker</label>
         <input
           type="text"

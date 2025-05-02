@@ -3,7 +3,7 @@ import BaseLayout from "../components/BaseLayout";
 import FormBacktesting from "../components/FormBacktesting";
 import StrategiesForm from "../components/StrategiesForm";
 import TradesTable from "../components/TradesTable";
-import { runBacktest } from "../api"; // Importa la función runBacktest
+import { runBacktest } from "../api";
 
 function Backtest() {
   const [formData, setFormData] = useState({
@@ -24,7 +24,7 @@ function Backtest() {
     },
   });
   const [result, setResult] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); // Nuevo estado para controlar el estado de carga
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -74,41 +74,51 @@ function Backtest() {
   };
 
   const runBacktestHandler = async () => {
-    setIsLoading(true); // Activa el estado de carga
+    setIsLoading(true);
     try {
-      const response = await runBacktest(formData); // Llama a la función desde api.js
-      console.log(response.data); // Ver la respuesta completa
+      const response = await runBacktest(formData);
+      console.log(response.data);
       if (response.data && response.data.Trades) {
-        setResult(response.data.Trades); // Guarda los trades recibidos
+        setResult(response.data.Trades);
       } else {
         console.error("La respuesta no contiene datos de trades.");
-        setResult([]); // Resultado vacío en caso de error
+        setResult([]);
       }
     } catch (error) {
       console.error("Error running backtest:", error);
-      setResult([]); // Maneja errores asegurando un resultado vacío
+      setResult([]);
     } finally {
-      setIsLoading(false); // Finaliza el estado de carga
+      setIsLoading(false);
     }
   };
 
   return (
     <BaseLayout>
-      <div className="flex justify-center items-center flex-col">
-        <h1 className="text-white text-xl font-semibold mb-4">Backtest Configuración</h1>
-        <FormBacktesting formData={formData} handleChange={handleChange} />
-        <StrategiesForm formData={formData} handleChange={handleChange} />
-        <button onClick={runBacktestHandler} className="bg-blue-600 text-white px-4 py-2 rounded-md mt-4">
-          Ejecutar Backtest
-        </button>
-        <div className="mt-6"> {/* Añadido margen vertical para separar el contenido */}
+      <div className="flex justify-center items-center flex-col px-4 py-6">
+        <h1 className="text-gray-200 text-2xl font-bold mb-6">Configuración del Backtest</h1>
+
+        <div className="bg-gray-800 shadow-md rounded-lg p-6 w-full max-w-2xl">
+          <FormBacktesting formData={formData} handleChange={handleChange} />
+          <StrategiesForm formData={formData} handleChange={handleChange} />
+
+          <div className="flex justify-center">
+            <button
+              onClick={runBacktestHandler}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-md mt-4 transition duration-300"
+            >
+              Ejecutar Backtest
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-8 w-full max-w-4xl">
           {isLoading ? (
-            <p className="text-white">Cargando resultados...</p>
+            <p className="text-gray-300 text-center">Cargando resultados...</p>
           ) : result ? (
             result.length > 0 ? (
               <TradesTable trades={result} />
             ) : (
-              <p className="text-white">No se encontraron operaciones.</p>
+              <p className="text-gray-400 text-center">No se encontraron operaciones.</p>
             )
           ) : null}
         </div>
