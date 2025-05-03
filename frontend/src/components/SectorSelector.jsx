@@ -9,17 +9,17 @@ const SectorSelector = ({ selectedSector, handleSectorChange }) => {
       className="mb-4 p-2 bg-gray-800 text-white"
     >
       <option value="Todos">Todos</option>
-      <option value="Industrials">Industrials</option>
-      <option value="Consumer Discretionary">Consumer Discretionary</option>
-      <option value="Information Technology">Information Technology</option>
-      <option value="Financials">Financials</option>
-      <option value="Health Care">Health Care</option>
-      <option value="Communication Services">Communication Services</option>
-      <option value="Materials">Materials</option>
-      <option value="Utilities">Utilities</option>
-      <option value="Energy">Energy</option>
-      <option value="Consumer Staples">Consumer Staples</option>
-      <option value="Real Estate">Real Estate</option>
+      <option value="Industrials">Industriales</option>
+      <option value="Consumer Discretionary">Consumo Discrecional</option>
+      <option value="Information Technology">Tecnología de la Información</option>
+      <option value="Financials">Financieros</option>
+      <option value="Health Care">Salud</option>
+      <option value="Communication Services">Servicios de Comunicación</option>
+      <option value="Materials">Materiales</option>
+      <option value="Utilities">Servicios Públicos</option>
+      <option value="Energy">Energía</option>
+      <option value="Consumer Staples">Productos Básicos de Consumo</option>
+      <option value="Real Estate">Bienes Raíces</option>
     </select>
   );
 };

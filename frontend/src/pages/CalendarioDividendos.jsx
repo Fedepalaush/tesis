@@ -60,70 +60,96 @@ const DividendCalendar = () => {
 
   return (
     <BaseLayout>
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Calendario de Dividendos</h1>
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 mb-4">
-        <select 
-          onChange={handleTickerChange} 
-          defaultValue="" 
-          disabled={tickersDisponibles.length === 0}
-          className="border rounded p-2"
-        >
-          <option value="" disabled>Selecciona un ticker</option>
-          {tickersDisponibles.map((ticker) => (
-            <option key={ticker} value={ticker}>{ticker}</option>
-          ))}
-        </select>
-        <button 
-          type="button" 
-          onClick={handleAddAllTickers} 
-          disabled={tickersDisponibles.length === 0} 
-          className="bg-gray-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          Añadir Todos
-        </button>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-          Generar Calendario
-        </button>
-      </form>
+      <div className="min-h-screen bg-black text-white py-8 px-4">
+        <div className="max-w-4xl mx-auto bg-gray-900 p-6 rounded-2xl shadow-lg">
+          <h1 className="text-3xl font-bold mb-6 text-white">📅 Calendario de Dividendos</h1>
 
-      {notification && <p className="text-green-500">{notification}</p>}
-      {error && <p className="text-red-500">{error}</p>}
+          <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 mb-6">
+            <select 
+              onChange={handleTickerChange} 
+              defaultValue="" 
+              disabled={tickersDisponibles.length === 0}
+              className="bg-gray-800 text-white border border-gray-600 rounded px-3 py-2"
+            >
+              <option value="" disabled>Selecciona un ticker</option>
+              {tickersDisponibles.map((ticker) => (
+                <option key={ticker} value={ticker}>{ticker}</option>
+              ))}
+            </select>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {selectedTickers.map((ticker) => (
-          <span key={ticker} className="bg-gray-200 px-3 py-1 rounded-lg">
-            {ticker} <span className="text-red-500 cursor-pointer" onClick={() => handleRemoveTicker(ticker)}>✖</span>
-          </span>
-        ))}
-      </div>
+            <button 
+              type="button" 
+              onClick={handleAddAllTickers} 
+              disabled={tickersDisponibles.length === 0} 
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition disabled:opacity-50"
+            >
+              Añadir Todos
+            </button>
 
-      {selectedTickers.length > 0 && (
-        <button className="bg-red-500 text-white px-4 py-2 rounded mb-4" onClick={handleRemoveAllTickers}>
-          Eliminar Todos
-        </button>
-      )}
+            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded transition">
+              Generar Calendario
+            </button>
+          </form>
 
-      {loading && <div className="loader animate-spin border-4 border-gray-300 border-t-blue-500 rounded-full w-10 h-10 mx-auto"></div>}
+          {notification && <p className="text-green-400 mb-4">{notification}</p>}
+          {error && <p className="text-red-400 mb-4">{error}</p>}
 
-      {!loading && (
-        <div className="grid grid-cols-3 gap-4">
-          {months.map((month, index) => (
-            <div key={index} className="border p-4 rounded-lg shadow">
-              <h3 className="font-bold">{month}</h3>
-              <p><strong>{dividendosPorMes[index]?.total ? `$${dividendosPorMes[index].total.toFixed(2)}` : "Sin pagos"}</strong></p>
-              <ul className="list-disc ml-4">
-                {dividendosPorMes[index]?.detalles?.map(({ empresa, monto }, i) => (
-                  <li key={i} className="text-sm">
-                    {empresa}: <span className="font-semibold">${monto.toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {selectedTickers.map((ticker) => (
+              <span 
+                key={ticker} 
+                className="bg-gray-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+              >
+                {ticker}
+                <button 
+                  onClick={() => handleRemoveTicker(ticker)} 
+                  className="text-red-400 hover:text-red-200 font-bold"
+                  aria-label={`Eliminar ${ticker}`}
+                >
+                  ✖
+                </button>
+              </span>
+            ))}
+          </div>
+
+          {selectedTickers.length > 0 && (
+            <button 
+              className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded mb-6 transition"
+              onClick={handleRemoveAllTickers}
+            >
+              Eliminar Todos
+            </button>
+          )}
+
+          {loading && (
+            <div className="flex justify-center my-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500 border-opacity-75"></div>
             </div>
-          ))}
+          )}
+
+          {!loading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {months.map((month, index) => (
+                <div key={index} className="bg-gray-800 p-4 rounded-lg shadow hover:shadow-xl transition">
+                  <h3 className="text-lg font-semibold mb-2">{month}</h3>
+                  <p className="mb-2">
+                    <strong>
+                      {dividendosPorMes[index]?.total ? `$${dividendosPorMes[index].total.toFixed(2)}` : "Sin pagos"}
+                    </strong>
+                  </p>
+                  <ul className="list-disc ml-5 text-sm text-gray-300 space-y-1">
+                    {dividendosPorMes[index]?.detalles?.map(({ empresa, monto }, i) => (
+                      <li key={i}>
+                        {empresa}: <span className="text-white font-medium">${monto.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
     </BaseLayout>
   );
 };

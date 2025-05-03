@@ -1,8 +1,7 @@
-// components/SharpePlotGraph.js
 import React from "react";
 import Plot from "react-plotly.js";
 
-const SharpePlotGraph = ({ sharpeData, xYears, yYears, selectedSector }) => {
+const SharpePlotGraph = ({ sharpeData, xYears, yYears, selectedSector, sectorLabel }) => {
   return (
     <div style={{ width: "90%", height: "100%" }}>
       <Plot
@@ -31,11 +30,12 @@ const SharpePlotGraph = ({ sharpeData, xYears, yYears, selectedSector }) => {
           },
         ]}
         layout={{
-          title: `Sharpe ratio ${yYears}y v ${xYears}y: ${selectedSector} SP500`,
-          xaxis: { title: `Sharpe Ratio (${xYears} Years)` },
-          yaxis: { title: `Sharpe Ratio (${yYears} Years)` },
-          plot_bgcolor: "rgb(0, 0, 0)", // Fondo negro
-          paper_bgcolor: "rgb(0, 0, 0)", // Fondo negro
+          title: `Sharpe ratio ${yYears}y vs ${xYears}y: ${sectorLabel} (S&P 500)`,
+          xaxis: { title: `Sharpe Ratio (${xYears} años)` },
+          yaxis: { title: `Sharpe Ratio (${yYears} años)` },
+          plot_bgcolor: "rgb(0, 0, 0)",
+          paper_bgcolor: "rgb(0, 0, 0)",
+          font: { color: "#FFFFFF" },
         }}
       />
     </div>

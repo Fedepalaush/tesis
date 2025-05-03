@@ -1,4 +1,3 @@
-// pages/SoportesResistencias.js
 import React, { useEffect, useState } from "react";
 import { fetchPivotPoints } from "../api";
 import TickerSelector from "../components/TickerSelector";
@@ -36,8 +35,6 @@ const SoportesResistencias = () => {
         const execData = await execResponse.json();
         setLastExecution(execData.last_execution);
         setShowToast(true);
-
-        // Ocultar el toast después de 5 segundos
         setTimeout(() => setShowToast(false), 10000);
       } catch (error) {
         console.error("Error al obtener la última ejecución:", error);
@@ -48,24 +45,45 @@ const SoportesResistencias = () => {
   }, []);
 
   if (data.length === 0 || historical.length === 0) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-black">
+        <p className="text-white text-lg animate-pulse">Cargando datos...</p>
+      </div>
+    );
   }
 
   const pivotLines = PivotPoints({ data, historical, limites });
 
   return (
     <BaseLayout>
-      <div className="flex flex-col justify-center items-center h-full">
-        <TickerSelector selectedTicker={selectedTicker} setSelectedTicker={setSelectedTicker} />
+      <div className="flex flex-col justify-start items-center w-full min-h-screen bg-black px-4 py-6 text-white">
+        <h1 className="text-3xl font-bold mb-6">Soportes y Resistencias</h1>
 
-        <CandlestickChart historical={historical} data={data} pivotLines={pivotLines} />
+        <div className="w-full max-w-6xl">
+  <label className="block text-sm text-gray-300 mb-2 ml-1">
+    Seleccioná un ticker:
+  </label>
+  <TickerSelector
+    selectedTicker={selectedTicker}
+    setSelectedTicker={setSelectedTicker}
+  />
+
+  <div className="mt-6 bg-gray-900 rounded-2xl shadow-xl p-4">
+    <CandlestickChart
+      historical={historical}
+      data={data}
+      pivotLines={pivotLines}
+    />
+  </div>
+</div>
+
       </div>
 
-      {/* Toast flotante */}
       {showToast && lastExecution && (
-        <div className="fixed bottom-6 right-6 bg-white border border-gray-300 shadow-lg rounded-lg px-4 py-3 z-50">
-          <p className="text-sm text-gray-800">
-            📅 Última actualización de datos: <strong>{lastExecution}</strong>
+        <div className="fixed bottom-6 right-6 bg-white text-black border border-gray-300 shadow-lg rounded-lg px-5 py-4 z-50 transition-opacity duration-500">
+          <p className="text-sm">
+            📅 Última actualización de datos:{" "}
+            <strong className="font-semibold">{lastExecution}</strong>
           </p>
         </div>
       )}

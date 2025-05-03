@@ -7,6 +7,21 @@ import SharpePlotGraph from "../components/SharpePlotGraph";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { fetchSharpeRatioData } from "../api"; // Importa la función desde api.js
 
+const sectorLabels = {
+  "Todos": "Todos",
+  "Industrials": "Industriales",
+  "Consumer Discretionary": "Consumo Discrecional",
+  "Information Technology": "Tecnología de la Información",
+  "Financials": "Financieros",
+  "Health Care": "Salud",
+  "Communication Services": "Servicios de Comunicación",
+  "Materials": "Materiales",
+  "Utilities": "Servicios Públicos",
+  "Energy": "Energía",
+  "Consumer Staples": "Productos Básicos de Consumo",
+  "Real Estate": "Bienes Raíces"
+};
+
 const SharpePlot = () => {
   const [sharpeData, setSharpeData] = useState([]);
   const [selectedSector, setSelectedSector] = useState("Information Technology");
@@ -45,6 +60,7 @@ const SharpePlot = () => {
   return (
     <BaseLayout>
       <div className="flex flex-col justify-center items-center h-screen" style={{ backgroundColor: "black" }}>
+        <h1>{selectedSector}</h1>
         <SectorSelector selectedSector={selectedSector} handleSectorChange={handleSectorChange} />
         <YearsSelectors
           xYears={xYears}
@@ -55,12 +71,14 @@ const SharpePlot = () => {
         {loading ? (
           <LoadingIndicator />
         ) : (
-          <SharpePlotGraph
-            sharpeData={sharpeData}
-            xYears={xYears}
-            yYears={yYears}
-            selectedSector={selectedSector}
-          />
+<SharpePlotGraph
+  sharpeData={sharpeData}
+  xYears={xYears}
+  yYears={yYears}
+  selectedSector={selectedSector}
+  sectorLabel={sectorLabels[selectedSector]}
+/>
+
         )}
       </div>
     </BaseLayout>

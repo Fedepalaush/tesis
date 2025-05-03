@@ -8,7 +8,7 @@ const TickerSelector = ({ selectedTicker, setSelectedTicker }) => {
       <select
         value={selectedTicker}
         onChange={(e) => setSelectedTicker(e.target.value)}
-        className="p-2 border rounded w-full"
+        className="p-2 border rounded w-full bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         {tickersBM.map((ticker) => (
           <option key={ticker} value={ticker}>
