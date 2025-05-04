@@ -23,7 +23,7 @@ def save_last_execution():
 class Command(BaseCommand):
     help = 'Import daily stock data from Yahoo Finance'
 
-    def fetch_and_save_stock_data(self, tickers, start_date, end_date):
+    def fetch_and_save_stock_data(self, tickers, start_date, end_date, full_download=False):
         """Descargar y guardar datos del stock."""
         self.stdout.write(f'Descargando datos desde {start_date} hasta {end_date} para: {", ".join(tickers)}...')
 
@@ -96,12 +96,24 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write(f'Última ejecución: {get_last_execution()}')
 
-        tickers = ['AAL', 'AAPL', 'ABEV', 'ABNB', 'ADBE', 'AEG', 'AMD', 'AMZN', 'ARCO', 'ARKK', 'AVY', 'BABA', 'BIDU', 'BITF', 'BP', 'BSBR', 'C', 'CCL', 'COIN', 'CRM', 'CSCO', 'CVS', 'CVX', 'DE', 'DESP', 'DIA', 'ERJ', 'EWZ', 'FDX', 'FSLR', 'GE', 'GLOB', 'GM', 'GOOGL', 'GS', 'HD', 'HMY', 'HOG', 'HPQ', 'HUT', 'INTC', 'JMIA', 'JNJ', 'JPM', 'KMB', 'KO', 'KOD', 'LAC', 'LRCX', 'MCD', 'MDLZ', 'MELI', 'META', 'MOD', 'MRVL', 'MSFT', 'MSTR', 'NFLX', 'NGG', 'NIO', 'NKE', 'NVDA', 'PAGS', 'PANW', 'PBR', 'PEP', 'PFE', 'PHG', 'PYPL', 'QCOM', 'QQQ', 'QQQD', 'RIOT', 'ROKU', 'RTX', 'SATL', 'SBUX', 'SDA', 'SHEL', 'SHOP', 'SLB', 'SNOW','SPCE', 'SPGI', 'SPOT', 'SPY', 'SPYD', 'STNE', 'T', 'TD', 'TGT', 'TM', 'TRIP', 'TSLA', 'TSM', 'TTE', 'TWLO', 'TXN', 'UBER', 'UGP', 'UPST', 'V', 'VALE', 'VIST', 'WBA', 'WMT', 'X', 'XLF', 'XOM', 'XP', 'ZM']
+        tickers = ['^GSPC','AAL', 'AAPL', 'ABEV', 'ABNB', 'ADBE', 'AEG', 'AMD', 'AMZN', 'ARCO', 'ARKK', 'AVY', 'BABA', 'BIDU', 'BITF', 'BP', 'BSBR', 'C', 'CCL', 'COIN', 'CRM', 'CSCO', 'CVS', 'CVX', 'DE', 'DESP', 'DIA', 'ERJ', 'EWZ', 'FDX', 'FSLR', 'GE', 'GLOB', 'GM', 'GOOGL', 'GS', 'HD', 'HMY', 'HOG', 'HPQ', 'HUT', 'INTC', 'JMIA', 'JNJ', 'JPM', 'KMB', 'KO', 'KOD', 'LAC', 'LRCX', 'MCD', 'MDLZ', 'MELI', 'META', 'MOD', 'MRVL', 'MSFT', 'MSTR', 'NFLX', 'NGG', 'NIO', 'NKE', 'NVDA', 'PAGS', 'PANW', 'PBR', 'PEP', 'PFE', 'PHG', 'PYPL', 'QCOM', 'QQQ', 'QQQD', 'RIOT', 'ROKU', 'RTX', 'SATL', 'SBUX', 'SDA', 'SHEL', 'SHOP', 'SLB', 'SNOW','SPCE', 'SPGI', 'SPOT', 'SPY', 'SPYD', 'STNE', 'T', 'TD', 'TGT', 'TM', 'TRIP', 'TSLA', 'TSM', 'TTE', 'TWLO', 'TXN', 'UBER', 'UGP', 'UPST', 'V', 'VALE', 'VIST', 'WBA', 'WMT', 'X', 'XLF', 'XOM', 'XP', 'ZM', 'AE']
 
         ticker_blocks = [tickers[i:i + 50] for i in range(0, len(tickers), 50)]
 
+        # Obtener los tickers ya almacenados en la base de datos
+        stored_tickers = StockData.objects.values_list('ticker', flat=True).distinct()
+
+        # Filtrar los nuevos tickers
+        new_tickers = [ticker for ticker in tickers if ticker not in stored_tickers]
+
+        # Para los tickers nuevos, descargamos toda la información desde el primer día
+        if new_tickers:
+            for ticker in new_tickers:
+                self.stdout.write(f'Descargando datos completos para el nuevo ticker: {ticker}...')
+                self.fetch_and_save_stock_data([ticker], datetime(2015, 1, 1).date(), datetime.now().date(), full_download=True)
+
+        # Descargamos los datos faltantes para los tickers existentes
         last_record = StockData.objects.order_by('-date').first()
-        
         if last_record:
             start_date = last_record.date + timedelta(days=1)
         else:
@@ -111,5 +123,5 @@ class Command(BaseCommand):
 
         for block in ticker_blocks:
             self.fetch_and_save_stock_data(block, start_date, end_date)
-        
+
         save_last_execution()
