@@ -25,6 +25,7 @@ urlpatterns = [
     path('get_activo/', get_activo, name='get_activo'),
     path('get_fundamental/', get_fundamental_info, name='get_fundamental'),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    path('api/portfolio/metrics/', views.portfolio_metrics, name='portfolio-metrics'),
 
     path('api/get_correlation_matrix', views.get_correlation_matrix, name='get_correlation_matrix'),
     path('sharpe-ratio/', views.sharpe_ratio, name='sharpe_ratio'),

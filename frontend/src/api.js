@@ -162,3 +162,11 @@ export const createActivo = async (ticker, precioCompra, cantidad) => {
   });
   return response.status; // Devuelve el estado de la respuesta
 };
+
+export const getPortfolioMetrics = async (activos, indice) => {
+  const response = await api.post("/api/portfolio/metrics/", {
+    activos,
+    indice_referencia: indice
+  });
+  return response.data;
+};

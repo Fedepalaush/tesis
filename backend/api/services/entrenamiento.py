@@ -41,7 +41,7 @@ def calcular_indicadores(df, indicadores):
             periodo = int(params.get("periodo", 20))
             df.ta.sma(close="Close", length=periodo, append=True)
 
-        elif nombre == "BollingerBands":
+        elif nombre == "BOLLINGERBANDS":
             periodo = int(params.get("periodo", 20))
             stddev = float(params.get("stddev", 2))
             df.ta.bbands(close="Close", length=periodo, std=stddev, append=True)

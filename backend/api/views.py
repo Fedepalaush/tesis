@@ -217,6 +217,105 @@ class ActivoDelete(generics.DestroyAPIView):
         user = self.request.user
         return Activo.objects.filter(usuario=user)  
 
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+import pandas as pd
+import numpy as np
+from .models import StockData
+
+
+@api_view(["POST"])
+def portfolio_metrics(request):
+    activos = request.data.get("activos", [])
+    indice = request.data.get("indice_referencia", "^GSPC")
+
+    if not activos:
+        return Response({"error": "No hay activos"}, status=400)
+
+    tickers = [a["ticker"] for a in activos]
+    tickers_unicos = list(set(tickers + [indice]))
+
+    print("✅ Tickers solicitados:", tickers_unicos)
+
+    precios_dict = {}
+
+    for ticker in tickers_unicos:
+        data = StockData.objects.filter(ticker=ticker).values("date", "close_price").order_by("date")
+        df = pd.DataFrame(data)
+
+        if df.empty:
+            print(f"⚠️ No hay datos para {ticker}")
+            continue
+
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date")
+        precios_dict[ticker] = df["close_price"]
+
+    if not precios_dict:
+        return Response({"error": "No hay datos disponibles"}, status=400)
+
+    precios = pd.concat(precios_dict.values(), axis=1, keys=precios_dict.keys())
+    precios = precios.dropna()
+
+    if precios.shape[0] < 10:
+        return Response({"error": "No hay suficientes datos para calcular métricas móviles"}, status=400)
+
+    rendimientos = precios.pct_change().dropna()
+
+    try:
+        # Calcular pesos
+        pesos = np.array([
+            a["cantidad"] * precios[a["ticker"]].iloc[-1] for a in activos
+        ])
+        pesos = pesos / np.sum(pesos)
+
+        activos_tickers = [a["ticker"] for a in activos]
+        rend_port = rendimientos[activos_tickers].dot(pesos)
+        rend_indice = rendimientos[indice]
+
+        # Tomar las últimas 7 fechas disponibles
+        ultimos_dias = rend_port.index[-7:]
+
+        volatilidades = []
+        betas = []
+        fechas = []
+
+        for fecha in ultimos_dias:
+            ventana_inicio = rend_port.index.get_loc(fecha) - 4  # ventana de 5 días
+            if ventana_inicio < 0:
+                continue
+
+            ventana_port = rend_port.iloc[ventana_inicio: ventana_inicio + 5]
+            ventana_indice = rend_indice.iloc[ventana_inicio: ventana_inicio + 5]
+
+            if len(ventana_port) < 3:
+                continue
+
+            vol = ventana_port.std()
+            vol = vol * 100 
+            beta = np.cov(ventana_port, ventana_indice)[0, 1] / ventana_indice.var()
+
+            if np.isfinite(vol) and np.isfinite(beta):
+                fechas.append(fecha.strftime("%Y-%m-%d"))
+                volatilidades.append(vol)
+                betas.append(beta)
+
+        if not fechas:
+            return Response({"error": "No se pudo calcular métricas móviles"}, status=400)
+
+        return Response({
+            "fechas": fechas,
+            "volatilidades": volatilidades,
+            "betas": betas
+        })
+
+    except Exception as e:
+        print("❌ Error al calcular métricas móviles:", str(e))
+        return Response({"error": "No se pudo calcular las métricas"}, status=500)
+
+
+
 @csrf_exempt
 def get_correlation_matrix(request):
     if request.method == 'GET':

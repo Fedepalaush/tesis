@@ -7,8 +7,10 @@ import DonutChart from "../components/DonutChart";
 import { Button } from "@tremor/react";
 import Sidebar, { SidebarItem } from "../components/SidebarComp";
 import { LayoutDashboard, BarChart3 } from "lucide-react";
-import { tickersBM } from '../constants';
-import { getActivos, deleteActivo, createActivo } from '../api';
+import { tickersBM } from "../constants";
+import { getActivos, deleteActivo, createActivo } from "../api";
+import { getPortfolioMetrics } from "../api"; // Nuevo import
+import VolatilidadYBetaGrafico from "../components/VolatilidadYBetaGrafico";
 
 function Home() {
   const [tickers, setTickers] = useState([]);
@@ -16,6 +18,7 @@ function Home() {
   const [tickerToBuy, setTickerToBuy] = useState("");
   const [precioCompra, setPrecioCompra] = useState("");
   const [cantidad, setCantidad] = useState("");
+  const [metrics, setMetrics] = useState({ volatilidad: null, beta: null });
   const tickersDrop = tickersBM;
 
   // Fetch initial data
@@ -31,6 +34,34 @@ function Home() {
       alert("Error al cargar los activos: " + error.message);
     }
   };
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        if (tickers.length > 0) {
+          const data = await getPortfolioMetrics(tickers);
+          console.log("Métricas del portafolio:", data);
+
+          // Convertir a formato esperado por el gráfico
+          const volatilidadData = data.fechas.map((fecha, index) => ({
+            date: fecha,
+            value: data.volatilidades[index],
+          }));
+
+          const betaData = data.fechas.map((fecha, index) => ({
+            date: fecha,
+            value: data.betas[index],
+          }));
+
+          setMetrics({ volatilidadData, betaData });
+        }
+      } catch (error) {
+        console.error("Error al obtener métricas:", error);
+      }
+    };
+
+    fetchMetrics();
+  }, [tickers]);
 
   const handleDeleteActivo = async (id) => {
     try {
@@ -51,15 +82,15 @@ function Home() {
     try {
       const parsedPrecio = parseFloat(precioCompra);
       const parsedCantidad = parseInt(cantidad, 10);
-  
+
       // Validación de entrada
       if (!tickerToBuy || isNaN(parsedPrecio) || isNaN(parsedCantidad) || parsedCantidad <= 0) {
         alert("Todos los campos son obligatorios. La cantidad debe ser positiva y los valores válidos.");
         return;
       }
-  
+
       const status = await createActivo(tickerToBuy, parsedPrecio, parsedCantidad);
-  
+
       if (status === 201) {
         alert("Activo creado con éxito");
         fetchActivos();
@@ -69,7 +100,6 @@ function Home() {
         alert(`Fallo la creación del activo. Código de estado: ${status}`);
       }
     } catch (error) {
-      // Si el error tiene un mensaje definido
       if (error.response && error.response.data && error.response.data.detail) {
         alert("Error del servidor: " + error.response.data.detail);
       } else if (error.message) {
@@ -79,7 +109,7 @@ function Home() {
       }
     }
   };
-  
+
   // Función auxiliar para reiniciar el formulario
   const resetCompraForm = () => {
     setTickerToBuy("");
@@ -125,11 +155,7 @@ function Home() {
                   <div className="mx-auto my-4 w-48">
                     <h3 className="text-lg font-black text-gray-800">Comprar</h3>
                     <div className="space-y-3">
-                      <select
-                        value={tickerToBuy}
-                        onChange={(e) => setTickerToBuy(e.target.value)}
-                        required
-                      >
+                      <select value={tickerToBuy} onChange={(e) => setTickerToBuy(e.target.value)} required>
                         <option value="" disabled>
                           Selecciona un Ticker
                         </option>
@@ -146,13 +172,7 @@ function Home() {
                         onChange={(e) => setPrecioCompra(e.target.value)}
                         required
                       />
-                      <input
-                        type="number"
-                        placeholder="Cantidad"
-                        value={cantidad}
-                        onChange={(e) => setCantidad(e.target.value)}
-                        required
-                      />
+                      <input type="number" placeholder="Cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
                     </div>
                     <div className="flex gap-3 justify-center mt-3">
                       <Button variant="primary" color="red" size="sm" onClick={() => setOpenCompra(false)}>
@@ -168,8 +188,17 @@ function Home() {
             )}
           </div>
 
-          <div className="mt-4 px-14 w-full md:w-1/2">
-            <DonutChart data={tickers} />
+          <div className="mt-4 px-14 w-full md:w-full flex flex-col md:flex-row">
+            <div className="md:w-1/2">
+              <DonutChart data={tickers} />
+            </div>
+            <div className="md:w-1/2 flex flex-col gap-4">
+              {metrics.volatilidadData && (
+                <VolatilidadYBetaGrafico title="Volatilidad" data={metrics.volatilidadData} strokeColor="#8884d8" height={250} />
+              )}
+
+              {metrics.betaData && <VolatilidadYBetaGrafico title="Beta" data={metrics.betaData} strokeColor="#82ca9d" height={250} />}
+            </div>
           </div>
         </div>
       </div>
