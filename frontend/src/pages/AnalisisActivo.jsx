@@ -53,11 +53,7 @@ const AnalisisActivo = () => {
   const [diferenciaEma, setDiferenciaEma] = useState(undefined);
   
   useEffect(() => {
-    console.log('Aca estoyyy')
-    console.log(data.data)
-    console.log('pase dif')
     if (data.length > 0) {
-      console.log(data);
       const dates = data.map((item) => item.date);
       const open = data.map((item) => item.open_price);
       const high = data.map((item) => item.high_price);
@@ -91,8 +87,6 @@ const AnalisisActivo = () => {
       setEmaLentaSemaforo(emaLentaSemaforo);
       setTripleEma(tripleEma);
       
-      console.log(emaRapidaSemaforo);
-      
       const lastRsi = rsi.slice(-1)[0];
       const lastEma = ema200.slice(-1)[0];
       const lastClose = close.slice(-1)[0];
@@ -105,8 +99,7 @@ const AnalisisActivo = () => {
       const lastEmaLentaSemaforo = parseFloat(emaLentaSemaforo.slice(-1)[0]);
       const lastTripleEma = tripleEma.slice(-1)[0];
       const closeYesterday = close.slice(-2)[0]; // Precio de cierre del día anterior
-      console.log('close' + lastClose)
-      console.log('close' + closeYesterday)
+
 
       const diferenciaHoy = ((lastClose - closeYesterday) / closeYesterday) * 100;
       
@@ -122,10 +115,6 @@ const AnalisisActivo = () => {
 
       // Verifica si todos son 0
       const allZero = lastTripleEma.every((item) => item.Cruce === 0);
-
-      console.log("¿Existe algún 1?", hasOne); // true o false
-      console.log("¿Existe algún 2?", hasTwo); // true o false
-      console.log(lastEmaMediaSemaforo); // true o false
 
       setLastRsi(lastRsi);
       setLastEma(lastEma);

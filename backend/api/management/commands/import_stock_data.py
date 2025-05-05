@@ -5,6 +5,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 import pandas as pd
 from api.models import StockData
+from api.utils.cedear_scraper import obtener_tickers_cedears
+
 
 LAST_EXECUTION_FILE = "last_execution.log"
 
@@ -96,7 +98,11 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write(f'Última ejecución: {get_last_execution()}')
 
-        tickers = ['^GSPC','AAL', 'AAPL', 'ABEV', 'ABNB', 'ADBE', 'AEG', 'AMD', 'AMZN', 'ARCO', 'ARKK', 'AVY', 'BABA', 'BIDU', 'BITF', 'BP', 'BSBR', 'C', 'CCL', 'COIN', 'CRM', 'CSCO', 'CVS', 'CVX', 'DE', 'DESP', 'DIA', 'ERJ', 'EWZ', 'FDX', 'FSLR', 'GE', 'GLOB', 'GM', 'GOOGL', 'GS', 'HD', 'HMY', 'HOG', 'HPQ', 'HUT', 'INTC', 'JMIA', 'JNJ', 'JPM', 'KMB', 'KO', 'KOD', 'LAC', 'LRCX', 'MCD', 'MDLZ', 'MELI', 'META', 'MOD', 'MRVL', 'MSFT', 'MSTR', 'NFLX', 'NGG', 'NIO', 'NKE', 'NVDA', 'PAGS', 'PANW', 'PBR', 'PEP', 'PFE', 'PHG', 'PYPL', 'QCOM', 'QQQ', 'QQQD', 'RIOT', 'ROKU', 'RTX', 'SATL', 'SBUX', 'SDA', 'SHEL', 'SHOP', 'SLB', 'SNOW','SPCE', 'SPGI', 'SPOT', 'SPY', 'SPYD', 'STNE', 'T', 'TD', 'TGT', 'TM', 'TRIP', 'TSLA', 'TSM', 'TTE', 'TWLO', 'TXN', 'UBER', 'UGP', 'UPST', 'V', 'VALE', 'VIST', 'WBA', 'WMT', 'X', 'XLF', 'XOM', 'XP', 'ZM', 'AE']
+        tickers = obtener_tickers_cedears()
+        tickers = [t for t in tickers if t]  # eliminar posibles strings vacíos
+        extra_tickers = ['^GSPC', 'QQQ']
+        tickers = extra_tickers + obtener_tickers_cedears()
+        tickers = list(set(tickers))  # quitar duplicados
 
         ticker_blocks = [tickers[i:i + 50] for i in range(0, len(tickers), 50)]
 

@@ -9,7 +9,7 @@ import Sidebar, { SidebarItem } from "../components/SidebarComp";
 import { LayoutDashboard, BarChart3 } from "lucide-react";
 import { tickersBM } from "../constants";
 import { getActivos, deleteActivo, createActivo } from "../api";
-import { getPortfolioMetrics } from "../api"; // Nuevo import
+import { getPortfolioMetrics } from "../api";
 import VolatilidadYBetaGrafico from "../components/VolatilidadYBetaGrafico";
 
 function Home() {
@@ -19,6 +19,7 @@ function Home() {
   const [precioCompra, setPrecioCompra] = useState("");
   const [cantidad, setCantidad] = useState("");
   const [metrics, setMetrics] = useState({ volatilidad: null, beta: null });
+  const [isLoading, setIsLoading] = useState(true); // nuevo estado
   const tickersDrop = tickersBM;
 
   // Fetch initial data
@@ -28,10 +29,13 @@ function Home() {
 
   const fetchActivos = async () => {
     try {
+      setIsLoading(true);
       const data = await getActivos();
       setTickers(data);
     } catch (error) {
       alert("Error al cargar los activos: " + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,7 +46,6 @@ function Home() {
           const data = await getPortfolioMetrics(tickers);
           console.log("Métricas del portafolio:", data);
 
-          // Convertir a formato esperado por el gráfico
           const volatilidadData = data.fechas.map((fecha, index) => ({
             date: fecha,
             value: data.volatilidades[index],
@@ -70,7 +73,7 @@ function Home() {
         alert("Activo eliminado");
         fetchActivos();
       } else {
-        alert("Fallo la eliminación del activo");
+        alert("Falló la eliminación del activo");
       }
     } catch (error) {
       alert("Error al eliminar el activo: " + error.message);
@@ -83,7 +86,6 @@ function Home() {
       const parsedPrecio = parseFloat(precioCompra);
       const parsedCantidad = parseInt(cantidad, 10);
 
-      // Validación de entrada
       if (!tickerToBuy || isNaN(parsedPrecio) || isNaN(parsedCantidad) || parsedCantidad <= 0) {
         alert("Todos los campos son obligatorios. La cantidad debe ser positiva y los valores válidos.");
         return;
@@ -97,7 +99,7 @@ function Home() {
         setOpenCompra(false);
         resetCompraForm();
       } else {
-        alert(`Fallo la creación del activo. Código de estado: ${status}`);
+        alert(`Falló la creación del activo. Código de estado: ${status}`);
       }
     } catch (error) {
       if (error.response && error.response.data && error.response.data.detail) {
@@ -110,7 +112,6 @@ function Home() {
     }
   };
 
-  // Función auxiliar para reiniciar el formulario
   const resetCompraForm = () => {
     setTickerToBuy("");
     setPrecioCompra("");
@@ -126,10 +127,18 @@ function Home() {
   const invActual = tickers.reduce((acc, item) => acc + item.precioActual * item.cantidad, 0).toFixed(2);
   const diferencia = ((invActual / totalSum - 1) * 100).toFixed(2);
 
+  // Spinner de carga mientras se cargan los datos
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-black">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="dark:bg-black">
       <div className="flex w-full">
-        {/* Sidebar */}
         <aside className="h-screen sticky top-0">
           <Sidebar>
             <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" alert active />
@@ -137,7 +146,6 @@ function Home() {
           </Sidebar>
         </aside>
 
-        {/* Main Content */}
         <div className="w-screen pl-10">
           <div className="grid grid-cols-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3 h-max-full">
             <CardUsageExample text="Inversión Inicial" number={`$${totalSum}`} />
@@ -172,7 +180,13 @@ function Home() {
                         onChange={(e) => setPrecioCompra(e.target.value)}
                         required
                       />
-                      <input type="number" placeholder="Cantidad" value={cantidad} onChange={(e) => setCantidad(e.target.value)} required />
+                      <input
+                        type="number"
+                        placeholder="Cantidad"
+                        value={cantidad}
+                        onChange={(e) => setCantidad(e.target.value)}
+                        required
+                      />
                     </div>
                     <div className="flex gap-3 justify-center mt-3">
                       <Button variant="primary" color="red" size="sm" onClick={() => setOpenCompra(false)}>
@@ -196,8 +210,9 @@ function Home() {
               {metrics.volatilidadData && (
                 <VolatilidadYBetaGrafico title="Volatilidad" data={metrics.volatilidadData} strokeColor="#8884d8" height={250} />
               )}
-
-              {metrics.betaData && <VolatilidadYBetaGrafico title="Beta" data={metrics.betaData} strokeColor="#82ca9d" height={250} />}
+              {metrics.betaData && (
+                <VolatilidadYBetaGrafico title="Beta" data={metrics.betaData} strokeColor="#82ca9d" height={250} />
+              )}
             </div>
           </div>
         </div>

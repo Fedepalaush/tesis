@@ -38,6 +38,7 @@ from .services.trends import check_ema_trend, calculate_score, calculate_triple_
 from .services.signals import calculate_signal
 from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
 from .services.entrenamiento import entrenar_modelo_service  # importamos el servicio
+from .utils.cedear_scraper import obtener_tickers_cedears  # tu función scrapeadora
 
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator
@@ -45,6 +46,13 @@ from ta.volatility import BollingerBands
 
 from .ml_models.lstm import entrenar_lstm
 from .ml_models.xgboost import entrenar_xgboost
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+import pandas as pd
+import numpy as np
+from .models import StockData
+
 
 from django.http import JsonResponse
 import json
@@ -77,7 +85,6 @@ def get_activo(request):
 
         if cached_data:
             # Retornar los datos desde el caché si están disponibles
-            print(cached_data)
             return JsonResponse({'data': cached_data})
 
         # Si los datos no están en caché, proceder con el cálculo
@@ -218,11 +225,6 @@ class ActivoDelete(generics.DestroyAPIView):
         return Activo.objects.filter(usuario=user)  
 
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-import pandas as pd
-import numpy as np
-from .models import StockData
 
 
 @api_view(["POST"])
@@ -236,7 +238,6 @@ def portfolio_metrics(request):
     tickers = [a["ticker"] for a in activos]
     tickers_unicos = list(set(tickers + [indice]))
 
-    print("✅ Tickers solicitados:", tickers_unicos)
 
     precios_dict = {}
 
@@ -536,10 +537,8 @@ def entrenar_modelo(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            print("==> Datos recibidos en entrenar_modelo:", data)  # 👈 debug
 
             resultado = entrenar_modelo_service(data)
-            print(resultado)
             if 'error' in resultado:
                 return JsonResponse(resultado, status=400)
 
@@ -571,3 +570,10 @@ def last_execution_date(request):
         return JsonResponse({"last_execution": last_exec})
     else:
         return JsonResponse({"last_execution": "No hay registros previos."})
+    
+    
+    
+def obtener_tickers(request):
+    tickers = obtener_tickers_cedears()
+    print(tickers)
+    return JsonResponse({"tickers": tickers})

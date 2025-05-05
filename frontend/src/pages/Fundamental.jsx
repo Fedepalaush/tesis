@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { fetchFundamentalData } from "../api"; // Importa la función desde api.js
+import { fetchFundamentalData } from "../api";
 import BaseLayout from "../components/BaseLayout";
 import Barchart from "../components/Barchart";
 import PieChartComponent from "../components/PieChartComponent";
@@ -58,6 +58,14 @@ const Fundamental = () => {
     fetchData();
   }, [ticker]);
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-black">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <BaseLayout>
       <div className="dark:bg-black flex w-full">
@@ -66,26 +74,22 @@ const Fundamental = () => {
             <TickerSelector selectedTicker={ticker} setSelectedTicker={setTicker} />
           </div>
 
-          {loading ? (
-            <div>Loading...</div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              <Barchart data={freeCashFlowData} type="FreeCashFlow" />
-              <Barchart data={debtData} type="NetDebt" />
-              <div className="flex align-middle justify-center items-center">
-                <PieChartComponent
-                  data={[
-                    { label: "Deuda a Largo Plazo", value: longTermDebt[0] },
-                    { label: "Deuda a Corto Plazo", value: currentDebt[0] },
-                  ]}
-                  title="Distribución de Deuda"
-                />
-              </div>
-              <Barchart data={cashAndCashEquivalents} type="Activos Corrientes" stacked={true} />
-              <Barchart data={totalAssets} type="TotalAssets" />
-              <Barchart data={ebitdaData} type="EBITDA" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Barchart data={freeCashFlowData} type="FreeCashFlow" />
+            <Barchart data={debtData} type="NetDebt" />
+            <div className="flex align-middle justify-center items-center">
+              <PieChartComponent
+                data={[
+                  { label: "Deuda a Largo Plazo", value: longTermDebt[0] },
+                  { label: "Deuda a Corto Plazo", value: currentDebt[0] },
+                ]}
+                title="Distribución de Deuda"
+              />
             </div>
-          )}
+            <Barchart data={cashAndCashEquivalents} type="Activos Corrientes" stacked={true} />
+            <Barchart data={totalAssets} type="TotalAssets" />
+            <Barchart data={ebitdaData} type="EBITDA" />
+          </div>
         </div>
       </div>
     </BaseLayout>

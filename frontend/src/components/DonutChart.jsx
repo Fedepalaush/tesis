@@ -3,6 +3,7 @@ import Plot from 'react-plotly.js';
 import { Card, Title } from '@tremor/react';
 
 const DonutChart = ({ data }) => {
+  console.log(data)
   const labels = data.map(item => item.ticker);
   const values = data.map(item => item.porcentaje_cartera);
 
