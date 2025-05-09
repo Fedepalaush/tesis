@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import pandas_ta as ta
 from sklearn.metrics import confusion_matrix
+from ..models import StockData
 
 def calcular_indicadores(df, indicadores):
     nuevas_columnas = []
@@ -77,7 +78,13 @@ def entrenar_modelo_service(data):
             return {"error": "La cantidad de días a predecir debe estar entre 1 y 10."}
 
         # 1. Descargar datos históricos
-        df = yf.Ticker(ticker).history(start=inicio, end=fin)
+        data = StockData.objects.filter(
+    ticker=ticker,
+    date__range=(inicio, fin)
+).order_by('date').values()
+        df = pd.DataFrame(data)
+        print(df)
+        print(df)
         if df.empty:
             return {"error": f"No se encontraron datos para {ticker}"}
 
@@ -90,7 +97,7 @@ def entrenar_modelo_service(data):
         df.dropna(inplace=True)
 
         # 4. Etiquetado: sube o baja en N días
-        df["target"] = (df["Close"].shift(-dias_prediccion) > df["Close"]).astype(int)
+        df["target"] = (df["close_price"].shift(-dias_prediccion) > df["close_price"]).astype(int)
         df.dropna(inplace=True)
         df = df.iloc[:-dias_prediccion]  # <-- Esto evita usar datos con targets que miran más allá del final
 
