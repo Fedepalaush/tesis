@@ -11,7 +11,7 @@ def run_backtest_service(data):
     """
 
     # Validación de datos de entrada
-    required_fields = ['ticker', 'inicio', 'fin', 'rapida', 'lenta', 'tp_percentage', 'sl_percentage', 'strategies']
+    required_fields = ['ticker', 'inicio', 'fin', 'rapida', 'lenta', 'tp_percentage', 'sl_percentage', 'strategies', 'initial_cash']
     for field in required_fields:
         if field not in data:
             return {'error': f'Missing field: {field}'}
@@ -24,6 +24,7 @@ def run_backtest_service(data):
     tp_percentage = data['tp_percentage']
     sl_percentage = data['sl_percentage']
     strategies = data['strategies']
+    initial_cash = data["initial_cash"]
 
     # Validar y convertir las fechas
     try:
@@ -56,9 +57,8 @@ def run_backtest_service(data):
     CustomStrategy.use_sma_cross = strategies.get('smaCross', False)
     CustomStrategy.use_rsi = strategies.get('rsi', False)
     CustomStrategy.rsi_params = strategies.get('rsiParams', {'overboughtLevel': 70, 'oversoldLevel': 30})
-
     # Ejecutar el backtest
-    bt = Backtest(data, CustomStrategy, cash=10000)
+    bt = Backtest(data, CustomStrategy, cash=int(initial_cash))
     stats = bt.run()
 
     # Convertir estadísticas adicionales en un diccionario

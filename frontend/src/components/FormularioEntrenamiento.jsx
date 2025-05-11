@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
-const modelos = [
-  'XGBoost',
-  'SVM',
-  'RandomForest',
-  'LogisticRegression',
-  'KNN',
-  'NaiveBayes'
-];
+const modelos = ["XGBoost", "SVM", "RandomForest", "KNN", "LSTM"];
 
 const indicadoresDisponibles = [
-  { nombre: 'SMA', parametros: ['periodo'] },
-  { nombre: 'EMA', parametros: ['periodo'] },
-  { nombre: 'RSI', parametros: ['periodo'] },
-  { nombre: 'BollingerBands', parametros: ['periodo', 'stddev'] },
-  { nombre: 'MACD', parametros: ['rapida', 'lenta', 'signal'] }
+  { nombre: "SMA", parametros: ["periodo"] },
+  { nombre: "EMA", parametros: ["periodo"] },
+  { nombre: "RSI", parametros: ["periodo"] },
+  { nombre: "BollingerBands", parametros: ["periodo", "stddev"] },
+  { nombre: "MACD", parametros: ["rapida", "lenta", "signal"] },
 ];
 
 export default function FormularioEntrenamiento({ onSubmit, loading }) {
-  const [ticker, setTicker] = useState('AAPL');
-  const [modelo, setModelo] = useState('XGBoost');
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  const [ticker, setTicker] = useState("AAPL");
+  const [modelo, setModelo] = useState("XGBoost");
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
   const [indicadores, setIndicadores] = useState([]);
   const [diasPrediccion, setDiasPrediccion] = useState(1);
 
@@ -32,12 +25,12 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
     const oneDayAgo = new Date(today);
     oneDayAgo.setDate(today.getDate() - 1);
 
-    setFechaInicio(lastYear.toISOString().split('T')[0]);
-    setFechaFin(oneDayAgo.toISOString().split('T')[0]);
+    setFechaInicio(lastYear.toISOString().split("T")[0]);
+    setFechaFin(oneDayAgo.toISOString().split("T")[0]);
   }, []);
 
   const agregarIndicador = (nombre) => {
-    const permiteMultiples = ['SMA', 'EMA'].includes(nombre);
+    const permiteMultiples = ["SMA", "EMA"].includes(nombre);
     const yaExiste = indicadores.some((i) => i.nombre === nombre);
     if (!permiteMultiples && yaExiste) return;
 
@@ -45,7 +38,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
     if (!def) return;
 
     const parametrosIniciales = def.parametros.reduce((acc, param) => {
-      acc[param] = '';
+      acc[param] = "";
       return acc;
     }, {});
 
@@ -67,7 +60,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (indicadores.length === 0) {
-      alert('Agrega al menos un indicador.');
+      alert("Agrega al menos un indicador.");
       return;
     }
 
@@ -92,7 +85,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-gray-900 shadow-lg rounded-lg p-6 space-y-6 text-white">
-     <div>
+      <div>
         <label className="block text-sm font-medium text-gray-300">Ticker</label>
         <input
           type="text"
@@ -110,8 +103,10 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
           onChange={(e) => setModelo(e.target.value)}
           className="mt-1 block w-full border border-gray-700 rounded-md p-2 bg-gray-800 text-white"
         >
-          {modelos.map((m) => (
-            <option key={m} value={m}>{m}</option>
+          {modelos.sort().map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
           ))}
         </select>
       </div>
@@ -158,11 +153,7 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
           <div key={index} className="bg-gray-800 border border-gray-700 rounded p-3 mb-3">
             <div className="flex justify-between items-center mb-2">
               <span className="font-semibold text-white">{i.nombre}</span>
-              <button
-                type="button"
-                onClick={() => eliminarIndicador(index)}
-                className="text-red-400 hover:underline text-sm"
-              >
+              <button type="button" onClick={() => eliminarIndicador(index)} className="text-red-400 hover:underline text-sm">
                 Eliminar
               </button>
             </div>
@@ -203,9 +194,9 @@ export default function FormularioEntrenamiento({ onSubmit, loading }) {
       <button
         type="submit"
         disabled={loading}
-        className={`w-full py-2 px-4 rounded bg-green-600 text-white hover:bg-green-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`w-full py-2 px-4 rounded bg-green-600 text-white hover:bg-green-700 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
       >
-        {loading ? 'Entrenando...' : 'Entrenar Modelo'}
+        {loading ? "Entrenando..." : "Entrenar Modelo"}
       </button>
     </form>
   );

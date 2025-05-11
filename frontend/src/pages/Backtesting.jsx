@@ -4,6 +4,7 @@ import FormBacktesting from "../components/FormBacktesting";
 import StrategiesForm from "../components/StrategiesForm";
 import TradesTable from "../components/TradesTable";
 import { runBacktest } from "../api";
+import BacktestResults from "../components/BacktestResults";
 
 function Backtest() {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ function Backtest() {
     lenta: 21,
     tp_percentage: 0.09,
     sl_percentage: 0.04,
+    initial_cash: 10000,
     strategies: {
       smaCross: false,
       rsi: false,
@@ -24,6 +26,7 @@ function Backtest() {
     },
   });
   const [result, setResult] = useState(null);
+  const [total, setTotal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -80,6 +83,7 @@ function Backtest() {
       console.log(response.data);
       if (response.data && response.data.Trades) {
         setResult(response.data.Trades);
+        setTotal(response.data);
       } else {
         console.error("La respuesta no contiene datos de trades.");
         setResult([]);
@@ -95,28 +99,35 @@ function Backtest() {
   return (
     <BaseLayout>
       <div className="flex justify-center items-center flex-col px-4 py-6">
-        <h1 className="text-gray-200 text-2xl font-bold mb-6">Configuración del Backtest</h1>
+        <h1 className="text-gray-200 text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+          Configuración del Backtest
+        </h1>
 
-        <div className="bg-gray-800 shadow-md rounded-lg p-6 w-full max-w-2xl">
+        <div className="bg-gray-800 shadow-md rounded-lg p-4 sm:p-6 w-full max-w-full">
           <FormBacktesting formData={formData} handleChange={handleChange} />
           <StrategiesForm formData={formData} handleChange={handleChange} />
 
           <div className="flex justify-center">
             <button
               onClick={runBacktestHandler}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-md mt-4 transition duration-300"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-md mt-4 transition duration-300 w-full sm:w-auto"
             >
               Ejecutar Backtest
             </button>
           </div>
         </div>
 
-        <div className="mt-8 w-full max-w-4xl">
+        <div className="mt-6 w-full max-w-full px-2 sm:px-4">
           {isLoading ? (
             <p className="text-gray-300 text-center">Cargando resultados...</p>
           ) : result ? (
             result.length > 0 ? (
-              <TradesTable trades={result} />
+              <div className="overflow-x-auto">
+                <BacktestResults total={total} />
+                <div className="mt-4">
+                  <TradesTable trades={result} />
+                </div>
+              </div>
             ) : (
               <p className="text-gray-400 text-center">No se encontraron operaciones.</p>
             )

@@ -55,6 +55,19 @@ const FormBacktesting = ({ formData, handleChange }) => {
           className="ml-2 p-1 rounded-md bg-gray-800 text-white border border-gray-600"
         />
       </div>
+      <div className="mb-4">
+        <label htmlFor="initial_cash" className="block text-gray-300 mb-1">
+          Monto Inicial
+        </label>
+        <input
+          type="number"
+          id="initial_cash"
+          name="initial_cash"
+          value={formData.initial_cash}
+          onChange={handleChange}
+          className="w-full px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
     </form>
   );
 };
