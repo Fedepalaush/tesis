@@ -134,6 +134,7 @@ export const fetchFundamentalData = async (ticker) => {
     const response = await axios.get("http://localhost:8000/get_fundamental/", {
       params: { ticker },
     });
+    console.log(response)
     return response.data;
   } catch (error) {
     console.error("Error fetching fundamental data:", error);

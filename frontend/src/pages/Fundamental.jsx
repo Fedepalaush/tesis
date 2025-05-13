@@ -20,7 +20,10 @@ const Fundamental = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log(ticker)
         const data = await fetchFundamentalData(ticker);
+        console.log(data)
+        
 
         const cashFlow = JSON.parse(data.data.cash_flow);
         const balance = JSON.parse(data.data.balance);

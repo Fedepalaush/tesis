@@ -4,5 +4,5 @@ export const REFRESH_TOKEN = "refresh";
 export let tickersBM = [];
 
 export const setTickersBM = (tickers) => {
-  tickersBM = tickers;
+  tickersBM = [...new Set(tickers)];
 };
