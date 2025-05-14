@@ -67,7 +67,7 @@ export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
               <TableCell style={{ color: (item.precioActual - item.precioCompra) * item.cantidad >= 0 ? "green" : "red" }}>
                 {`$${((item.precioActual - item.precioCompra) * item.cantidad).toFixed(2)}`}
               </TableCell>
-              <TableCell>{`$${(item.precioCompra * item.cantidad).toFixed(2)}`}</TableCell>
+              <TableCell>{`$${(item.precioActual * item.cantidad).toFixed(2)}`}</TableCell>
               <TableCell>
                 <div className="flex gap-3">
                   <Button variant="secondary" color="green" size="sm" onClick={() => openCompraSetter(true, item.ticker)}>

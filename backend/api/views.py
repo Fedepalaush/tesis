@@ -177,7 +177,6 @@ class ActivoListCreate(generics.ListCreateAPIView):
         activos = Activo.objects.filter(usuario=user)
 
         for activo in activos:
-            # Delegar el procesamiento al servicio
             processed_data = process_activo(activo)
             if processed_data:
                 activo.precioActual = processed_data['precioActual']
@@ -185,6 +184,24 @@ class ActivoListCreate(generics.ListCreateAPIView):
                 activo.save()
 
         return activos
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+
+        total_invertido = 0
+        diferencia_total = 0
+
+        for activo in queryset:
+            if activo.precioActual is not None:
+                total_invertido += activo.precioActual * activo.cantidad
+                diferencia_total += (activo.precioActual - activo.precioCompra) * activo.cantidad
+
+        return Response({
+            "activos": serializer.data,
+            "total_invertido": total_invertido,
+            "diferencia_total": diferencia_total
+        })
 
     
     def perform_create(self, serializer):

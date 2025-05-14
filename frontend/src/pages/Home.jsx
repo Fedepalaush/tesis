@@ -31,7 +31,7 @@ function Home() {
     try {
       setIsLoading(true);
       const data = await getActivos();
-      setTickers(data);
+      setTickers(data.activos); // Usamos el nuevo formato de datos
     } catch (error) {
       alert("Error al cargar los activos: " + error.message);
     } finally {
@@ -123,9 +123,14 @@ function Home() {
     setOpenCompra(isOpen);
   };
 
-  const totalSum = tickers.reduce((acc, item) => acc + item.precioCompra * item.cantidad, 0).toFixed(2);
-  const invActual = tickers.reduce((acc, item) => acc + item.precioActual * item.cantidad, 0).toFixed(2);
-  const diferencia = ((invActual / totalSum - 1) * 100).toFixed(2);
+// Cálculo del total actualizado
+const totalSum = tickers.reduce((acc, item) => acc + item.precioCompra * item.cantidad, 0).toFixed(2);
+
+// Actualización del valor de la inversión actual con precioActual
+const invActual = tickers.reduce((acc, item) => acc + item.precioActual * item.cantidad, 0).toFixed(2);
+
+// Diferencia porcentual entre inversión actual y inicial
+const diferencia = ((invActual / totalSum - 1) * 100).toFixed(2);
 
   // Spinner de carga mientras se cargan los datos
   if (isLoading) {
