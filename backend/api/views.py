@@ -176,29 +176,63 @@ class ActivoListCreate(generics.ListCreateAPIView):
         user = self.request.user
         activos = Activo.objects.filter(usuario=user)
 
+        # Procesar cada activo y calcular los valores requeridos
+        tickers_data = []
+        total_actual_cartera = 0  # Inicializamos el total de la inversión actual
+
+        # Primero recorremos los activos para calcular el total de la inversión actual
         for activo in activos:
             processed_data = process_activo(activo)
             if processed_data:
-                activo.precioActual = processed_data['precioActual']
-                activo.recomendacion = processed_data['recomendacion']
-                activo.save()
+                # Calcular los valores necesarios
+                precioCompra = activo.precioCompra
+                cantidad = activo.cantidad
+                precioActual = processed_data.get('precioActual', activo.precioActual)
+                total_actual_cartera += precioActual * cantidad  # Sumar al total actual de la cartera
 
-        return activos
+        # Ahora procesamos nuevamente para calcular los valores por activo y el porcentaje de cartera
+        for activo in activos:
+            processed_data = process_activo(activo)
+            if processed_data:
+                # Calcular los valores necesarios
+                precioCompra = activo.precioCompra
+                cantidad = activo.cantidad
+                precioActual = processed_data.get('precioActual', activo.precioActual)
+                total_inversion = precioCompra * cantidad
+                total_actual = precioActual * cantidad
+                ganancia = total_actual - total_inversion
+                ganancia_porcentaje = (ganancia / total_inversion) * 100 if total_inversion != 0 else 0
+                recomendacion = processed_data.get('recomendacion', activo.recomendacion)
+
+                # Calcular el porcentaje de cartera en base al total actual
+                porcentaje_cartera = (total_actual / total_actual_cartera) * 100 if total_actual_cartera != 0 else 0
+
+                # Guardar los resultados procesados en el formato deseado
+                tickers_data.append({
+                    "ticker": activo.ticker,
+                    "cantidad": cantidad,
+                    "precioCompra": precioCompra,
+                    "precioActual": precioActual,
+                    "total_inversion": total_inversion,
+                    "total_actual": total_actual,
+                    "ganancia_porcentaje": ganancia_porcentaje,
+                    "ganancia": ganancia,
+                    "recomendacion": recomendacion,
+                    "porcentaje_cartera": porcentaje_cartera  # Añadir el porcentaje de cartera
+                })
+
+        return tickers_data
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+        tickers_data = self.get_queryset()
 
-        total_invertido = 0
-        diferencia_total = 0
+        # Calcular totales generales
+        total_invertido = sum(ticker['total_inversion'] for ticker in tickers_data)
+        diferencia_total = sum(ticker['ganancia'] for ticker in tickers_data)
 
-        for activo in queryset:
-            if activo.precioActual is not None:
-                total_invertido += activo.precioActual * activo.cantidad
-                diferencia_total += (activo.precioActual - activo.precioCompra) * activo.cantidad
-
+        # Devolver los datos procesados junto con los totales
         return Response({
-            "activos": serializer.data,
+            "activos": tickers_data,
             "total_invertido": total_invertido,
             "diferencia_total": diferencia_total
         })

@@ -44,7 +44,6 @@ function Home() {
       try {
         if (tickers.length > 0) {
           const data = await getPortfolioMetrics(tickers);
-          console.log("Métricas del portafolio:", data);
 
           const volatilidadData = data.fechas.map((fecha, index) => ({
             date: fecha,
