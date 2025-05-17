@@ -80,14 +80,11 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
 
 // Función para obtener los datos del activo
 export const fetchActivoAnalysis = (ticker, startDate, endDate) => {
-  return axios.get(`${API_BASE_URL}/get_activo/`, {
-    params: {
-      ticker,
-      start_date: startDate,
-      end_date: endDate,
-    },
+  return api.get("/activo/", {
+    params: { ticker, start_date: startDate, end_date: endDate },
   });
 };
+
 
   // Función para ejecutar el backtest
 export const runBacktest = (formData) => {

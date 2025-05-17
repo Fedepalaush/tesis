@@ -1,23 +1,25 @@
+version: '3.8'
+
 services:
   backend:
     build:
       context: ./backend
     volumes:
-      - static:/static
+      - static:/app/static
     env_file:
-      - .env
+      - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
       - timescaledb
-    restart: unless-stopped  # Reiniciar automáticamente
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
     volumes:
       - frontend:/app/dist
-    restart: unless-stopped  # Reiniciar automáticamente
+    restart: unless-stopped
 
   nginx:
     build:
@@ -30,7 +32,7 @@ services:
     depends_on:
       - backend
       - frontend
-    restart: unless-stopped  # Reiniciar automáticamente
+    restart: unless-stopped
 
   timescaledb:
     image: timescale/timescaledb-ha:pg16
@@ -42,7 +44,8 @@ services:
       - "5432:5432"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
-    restart: unless-stopped  # Reiniciar automáticamente
+      - ./postgres-init:/docker-entrypoint-initdb.d  # <-- Montamos los scripts
+    restart: unless-stopped
 
 volumes:
   static:

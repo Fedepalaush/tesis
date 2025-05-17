@@ -1,26 +1,18 @@
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from rest_framework import viewsets
 from .models import Activo
 from .serializers import ActivoSerializer
 from rest_framework.response import Response
 import yfinance as yf
 import numpy as np
-from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
-from django.utils import timezone
 from rest_framework import generics
 from .serializers import UserSerializer
 from django.contrib.auth import get_user_model
 from django.db.models import F
 from rest_framework.permissions import IsAuthenticated, AllowAny 
-import pandas_ta as ta
 import pandas as pd
 from datetime import datetime
-from backtesting import Strategy, Backtest
-from backtesting.lib import crossover
-from datetime import datetime, timedelta
 from .services.agrupacion import agrupar_acciones
 from rest_framework.decorators import api_view
 from api.models import StockData
@@ -33,25 +25,16 @@ from .services.activo_service import process_activo
 from . services.fundamental import get_fundamental_data
 from .services.backtesting import run_backtest_service
 from .services.retornos_mensuales import calcular_retornos_mensuales
-from .services.indicators import calculate_indicators, calculate_rsi, calculate_analytics, fetch_historical_data, calculate_sharpe_ratio
-from .services.trends import check_ema_trend, calculate_score, calculate_triple_ema
-from .services.signals import calculate_signal
-from .services.utils import validate_date_range, detectar_cruce, evaluar_cruce
+from .services.indicators import calculate_analytics, fetch_historical_data, calculate_sharpe_ratio
+from .services.utils import validate_date_range
 from .services.entrenamiento import entrenar_modelo_service  # importamos el servicio
 from .utils.cedear_scraper import obtener_tickers_cedears  # tu función scrapeadora
-
-from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator
-from ta.volatility import BollingerBands
-
-from .ml_models.lstm import entrenar_lstm
-from .ml_models.xgboost import entrenar_xgboost
-
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import pandas as pd
 import numpy as np
 from .models import StockData
+from rest_framework import status
 
 
 from django.http import JsonResponse
@@ -61,46 +44,45 @@ import os
 
 LAST_EXECUTION_FILE = "last_execution.log"
       
-@csrf_exempt
-def get_activo(request):
-    if request.method == 'GET':
+class ActivoAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
         ticker = request.GET.get('ticker')
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
 
-        # Validar parámetros
+        # Validación de parámetros
         if not ticker:
-            return JsonResponse({'error': 'Parameter "ticker" is required.'}, status=400)
+            return Response({'error': 'Parameter "ticker" is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
             validate_date_range(start_date, end_date)
         except ValueError as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generar una clave única para el caché
         cache_key = f"get_activo_{ticker}_{start_date_str}_{end_date_str}"
         cached_data = cache.get(cache_key)
 
         if cached_data:
-            # Retornar los datos desde el caché si están disponibles
-            return JsonResponse({'data': cached_data})
+            return Response({'data': cached_data}, status=status.HTTP_200_OK)
 
-        # Si los datos no están en caché, proceder con el cálculo
         try:
             df = fetch_historical_data(ticker, start_date, end_date)
 
             if df.empty:
-                return JsonResponse({'error': 'No data found for the provided ticker and date range.'}, status=404)
+                return Response(
+                    {'error': 'No data found for the provided ticker and date range.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
             data = calculate_analytics(df)
-            cache.set(cache_key, data, timeout=3600)  # Cache por 1 hora
-            return JsonResponse({'data': data})
+            cache.set(cache_key, data, timeout=3600)  # 1 hora
+            return Response({'data': data}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-
-    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
 def get_retornos_mensuales(request):

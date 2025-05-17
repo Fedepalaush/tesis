@@ -1,6 +1,6 @@
 
 from api.views import CreateUserView
-from api.views import get_activo, get_fundamental_info
+from api.views import get_fundamental_info
 from django.contrib import admin
 from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
@@ -22,7 +22,7 @@ urlpatterns = [
     #path('api-auth/', include('rest_framework.urls')),
 
     path('api/', include('api.urls')),
-    path('get_activo/', get_activo, name='get_activo'),
+    path('api/activo/', views.ActivoAPIView.as_view(), name='get_activo'),
     path('get_fundamental/', get_fundamental_info, name='get_fundamental'),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path('api/portfolio/metrics/', views.portfolio_metrics, name='portfolio-metrics'),
