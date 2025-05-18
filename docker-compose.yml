@@ -55,11 +55,7 @@ services:
       - internet_access
     restart: unless-stopped
 
-volumes:
-  # siguen siendo bind-mounts locales
-  # (no cambian respecto a la versión anterior)
-  # └──> ./data/…
-  # (si quieres convertirlos en volúmenes “nombrados”, puedes definirlos aquí)
+
 
 networks:
   internet_access:
