@@ -5,16 +5,19 @@ services:
     build:
       context: ./backend
     volumes:
-      - ./data/static:/app/static
+      - ./data/static:/static
+      - ./data/backend_state:/opt/state        # ← persiste el sentinela
     env_file:
       - ./backend/.env
     ports:
       - "8000:8000"
+    networks:
+      - internet_access
+      - internal_network
+    restart: unless-stopped
     depends_on:
       - timescaledb
-    networks:
-      - internet_access          # ⇦ acceso hacia afuera
-    restart: unless-stopped
+    
 
   frontend:
     build:
@@ -23,6 +26,7 @@ services:
       - ./data/frontend:/app/dist
     networks:
       - internet_access
+      - internal_network
     restart: unless-stopped
 
   nginx:
@@ -34,10 +38,13 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
     networks:
       - internet_access
+      - internal_network
     restart: unless-stopped
 
   timescaledb:
@@ -50,14 +57,16 @@ services:
       - "5432:5432"
     volumes:
       - ./data/timescaledb_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - ./postgres-init:/docker-entrypoint-initdb.d   # ← one-shot scripts
     networks:
       - internet_access
+      - internal_network
     restart: unless-stopped
 
-
-
 networks:
+  internal_network:
+    driver: bridge
+    internal: true
   internet_access:
     driver: bridge
-    internal: false   # <-- garantiza salida a Internet
+    internal: false
