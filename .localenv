@@ -1,0 +1,5 @@
+DB_NAME=tesis
+DB_USER=postgres
+DB_PASSWORD=password
+DB_HOST=timescaledb
+DB_PORT=5432
