@@ -5,33 +5,39 @@ services:
     build:
       context: ./backend
     volumes:
-      - static:/app/static
+      - ./data/static:/app/static
     env_file:
       - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
       - timescaledb
+    networks:
+      - internet_access          # ⇦ acceso hacia afuera
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
     volumes:
-      - frontend:/app/dist
+      - ./data/frontend:/app/dist
+    networks:
+      - internet_access
     restart: unless-stopped
 
   nginx:
     build:
       context: ./nginx
     volumes:
-      - static:/static
-      - frontend:/var/www/frontend
+      - ./data/static:/static
+      - ./data/frontend:/var/www/frontend
     ports:
       - "80:80"
     depends_on:
       - backend
       - frontend
+    networks:
+      - internet_access
     restart: unless-stopped
 
   timescaledb:
@@ -43,11 +49,19 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - timescaledb_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d  # <-- Montamos los scripts
+      - ./data/timescaledb_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - internet_access
     restart: unless-stopped
 
 volumes:
-  static:
-  frontend:
-  timescaledb_data:
+  # siguen siendo bind-mounts locales
+  # (no cambian respecto a la versión anterior)
+  # └──> ./data/…
+  # (si quieres convertirlos en volúmenes “nombrados”, puedes definirlos aquí)
+
+networks:
+  internet_access:
+    driver: bridge
+    internal: false   # <-- garantiza salida a Internet

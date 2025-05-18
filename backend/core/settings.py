@@ -128,6 +128,8 @@ CACHES = {
 #        "NAME": "database",
 #    }
 #}
+"""
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -137,9 +139,9 @@ DATABASES = {
         'HOST': 'localhost',         # Nombre del servicio
         'PORT': '5433',                 # Puerto de PostgreSQL
     }
-}
+}"""
 
-""" DATABASES = {
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME', 'tesis'),
@@ -149,7 +151,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
- """
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

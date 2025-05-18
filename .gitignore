@@ -1,14 +1,86 @@
-# Node
+##############################
+# 1. Datos persistentes Docker
+##############################
+# Todo lo que viva en ./data/ (volúmenes, bases, archivos estáticos, etc.)
+data/
+!data/.gitkeep          # ← mantén el marcador vacío si lo usas
+
+##############################
+# 2. Artefactos Node / React
+##############################
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# Builds y cachés
+build/
+dist/
+.next/
+out/
+parcel-cache/
+coverage/
+.eslintcache
+# Lockfile antiguo (mantén sólo uno)
+npm-shrinkwrap.json
 
-# Mac
+##############################
+# 3. Cachés Python
+##############################
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+# Entornos virtuales comunes
+.venv/
+venv/
+env/
+# Caché de pruebas
+.pytest_cache/
+# Informes de cobertura
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+# Herramientas
+.tox/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+##############################
+# 4. Archivos temporales del sistema
+##############################
 .DS_Store
+Thumbs.db
 
-# VSCode
+##############################
+# 5. Editores / IDEs
+##############################
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
-# Environment variables
+##############################
+# 6. Variables de entorno
+##############################
 .env
+.env.*
+
+##############################
+# 7. Otros logs o salidas
+##############################
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+*.sqlite
+*.sqlite3
+*.db
