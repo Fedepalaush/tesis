@@ -1,31 +1,29 @@
-# Dockerfile para el backend de la aplicación
-FROM python:3.9-slim-buster
+FROM python:3.9-slim-bookworm
 
-# Set working directory
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    STATIC_ROOT=/static 
+    
 WORKDIR /app
 
-# Copy requirements file
 COPY requirements.txt .
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl \
+    && pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# Copy project files
 COPY . .
 
-# Collect static files
+# ¡NO exponemos puertos! El contenedor vive solo en la red interna
+# EXPOSE 8000   ← Eliminado
+
+# Recogemos estáticos en la ruta del volumen
 RUN python manage.py collectstatic --noinput
 
-# Make entrypoint.sh executable
+# Permisos para el entrypoint
 RUN chmod +x entrypoint.sh
 
-# Healthcheck
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
-  CMD curl --fail http://0.0.0.0:8000/api/ 
+  CMD curl -fs http://localhost:8000/api/health/ || exit 1
 
-# Run entrypoint.sh
 ENTRYPOINT ["/app/entrypoint.sh"]
-
-# CMD original (ajústalo a tu framework)
-#CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

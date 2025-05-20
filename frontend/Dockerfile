@@ -1,22 +1,28 @@
-FROM node:alpine
+########################
+# ① Etapa de build SPA
+########################
+FROM node:21-alpine AS builder
 
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci          # reproducible y más rápido que ‘npm install’
 COPY . .
-RUN npm install
-RUN npm run build
+RUN npm run build   # genera ‘dist/’
 
-# Install nginx
-RUN apk update && apk add nginx
+########################
+# ② Etapa Nginx final
+########################
+FROM nginx:1.25-alpine
 
-# Copy static files to nginx directory
-RUN rm -rf /usr/share/nginx/html/*
-RUN cp -r dist/. /usr/share/nginx/html/
+# --- Copiamos el artefacto SPA ---
+COPY --from=builder /app/dist/ /var/www/frontend/
 
-# Copy nginx configuration
-RUN cp nginx.conf /etc/nginx/nginx.conf
+# --- Copiamos la configuración de Nginx ---
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
+# --- Directorio donde montaremos los estáticos de Django ---
+#    (no se crea aquí porque vendrá como volumen)
+VOLUME ["/static"]
+
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

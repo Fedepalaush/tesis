@@ -128,12 +128,7 @@ def get_fundamental_info(request):
             return JsonResponse({'data': data})
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
-    return JsonResponse({'error': 'Only GET requests are allowed.'}, status=400)
 
-class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
 
@@ -610,3 +605,6 @@ def obtener_tickers(request):
     tickers = obtener_tickers_cedears()
     print(tickers)
     return JsonResponse({"tickers": tickers})
+
+def health_check(request):    
+    return JsonResponse({"status": "OK"})
