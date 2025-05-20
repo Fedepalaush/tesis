@@ -605,3 +605,6 @@ def obtener_tickers(request):
     tickers = obtener_tickers_cedears()
     print(tickers)
     return JsonResponse({"tickers": tickers})
+
+def health_check(request):    
+    return JsonResponse({"status": "OK"})

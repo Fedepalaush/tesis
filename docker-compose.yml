@@ -1,47 +1,30 @@
-version: '3.8'
+version: "3.8"
 
 services:
+
   backend:
     build:
       context: ./backend
     volumes:
-      - ./data/static:/static
-      - ./data/backend_state:/opt/state        # ← persiste el sentinela
-    env_file:
-      - ./backend/.env
-    ports:
-      - "8000:8000"
-    networks:
-      - internet_access
-      - internal_network
+      - ./data/static:/static                # ← genera aquí collectstatic
+      - ./data/backend_state:/opt/state
+    env_file: ./backend/.env
+    networks: [internal_network]
     restart: unless-stopped
     depends_on:
       - timescaledb
-    
+    # puerto **NO** expuesto al host
 
   frontend:
     build:
       context: ./frontend
-    volumes:
-      - ./data/frontend:/app/dist
-    networks:
-      - internet_access
-      - internal_network
-    restart: unless-stopped
-
-  nginx:
-    build:
-      context: ./nginx
-    volumes:
-      - ./data/static:/static
-      - ./data/frontend:/var/www/frontend
     ports:
-      - "80:80"
+      - "80:80"                              # único punto de entrada
     depends_on:
       backend:
-        condition: service_healthy
-      frontend:
-        condition: service_started
+        condition: service_started           # o service_healthy si añades healthcheck
+    volumes:
+      - ./data/static:/static                # lee los estáticos de Django
     networks:
       - internet_access
       - internal_network
@@ -53,13 +36,12 @@ services:
       POSTGRES_DB: tesis
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
     volumes:
       - ./data/timescaledb_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d   # ← one-shot scripts
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
     networks:
-      - internet_access
       - internal_network
     restart: unless-stopped
 
@@ -69,4 +51,3 @@ networks:
     internal: true
   internet_access:
     driver: bridge
-    internal: false
