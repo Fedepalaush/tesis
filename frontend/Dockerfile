@@ -5,7 +5,7 @@ FROM node:21-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci          # reproducible y más rápido que ‘npm install’
+RUN npm ci
 COPY . .
 RUN npm run build   # genera ‘dist/’
 
@@ -20,8 +20,7 @@ COPY --from=builder /app/dist/ /var/www/frontend/
 # --- Copiamos la configuración de Nginx ---
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# --- Directorio donde montaremos los estáticos de Django ---
-#    (no se crea aquí porque vendrá como volumen)
+# --- Montamos el volumen donde estarán los estáticos de Django ---
 VOLUME ["/static"]
 
 EXPOSE 80
