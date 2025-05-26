@@ -34,16 +34,19 @@ def get_fundamental_data(ticker):
         balance_json = balance.to_json(date_format='iso') if not balance.empty else None
         income_json = income.to_json(date_format='iso') if not income.empty else None
 
-        # Extraer deuda a largo y corto plazo
-        long_term_debt = (
-            balance.get('LongTermDebt').values[0]
-            if 'LongTermDebt' in balance.columns else 0
-        )
-        current_debt = (
-            balance.get('CurrentDebt').values[0]
-            if 'CurrentDebt' in balance.columns else 0
-        )
+        if 'LongTermDebt' in balance.index:
+            long_term_debt = balance.loc['LongTermDebt', balance.columns[0]]
+        else:
+            long_term_debt = 0
 
+        if 'CurrentDebt' in balance.index:
+            current_debt = balance.loc['CurrentDebt', balance.columns[0]]
+        else:
+            current_debt = 0
+
+        print(long_term_debt)
+        print(current_debt)
+        
         # Datos fundamentales para incluir en la respuesta
         fundamental_data = {
             'cash_flow': cashflows_json,

@@ -8,13 +8,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import axios from "axios";
 
 import "./App.css";
-import NavbarComp from "./components/NavbarComp";
-import Sidebar from "./components/SidebarComp";
-import { SidebarItem } from "./components/SidebarComp";
-import { LayoutDashboard, BarChart3, UserCircle, Boxes, Package, Receipt, Settings, LifeBuoy } from "lucide-react";
-import { CardUsageExample } from "./components/Card";
-import { TableUsageExample } from "./components/Table";
-import { SparkAreaUsageExample } from "./components/SparkChart";
 
 import { ApolloClient, InMemoryCache, ApolloProvider, gql, useQuery } from "@apollo/client";
 import AnalisisActivo from "./pages/AnalisisActivo";

@@ -151,27 +151,25 @@ class ActivoListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        activos = Activo.objects.filter(usuario=user)
+        return Activo.objects.filter(usuario=user)
 
-        # Procesar cada activo y calcular los valores requeridos
-        tickers_data = []
-        total_actual_cartera = 0  # Inicializamos el total de la inversión actual
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        activos = []
 
-        # Primero recorremos los activos para calcular el total de la inversión actual
-        for activo in activos:
+        total_actual_cartera = 0
+
+        # Primer paso: calcular total actual cartera
+        for activo in queryset:
             processed_data = process_activo(activo)
             if processed_data:
-                # Calcular los valores necesarios
-                precioCompra = activo.precioCompra
-                cantidad = activo.cantidad
                 precioActual = processed_data.get('precioActual', activo.precioActual)
-                total_actual_cartera += precioActual * cantidad  # Sumar al total actual de la cartera
+                total_actual_cartera += precioActual * activo.cantidad
 
-        # Ahora procesamos nuevamente para calcular los valores por activo y el porcentaje de cartera
-        for activo in activos:
+        # Segundo paso: construir lista con cálculos para cada activo
+        for activo in queryset:
             processed_data = process_activo(activo)
             if processed_data:
-                # Calcular los valores necesarios
                 precioCompra = activo.precioCompra
                 cantidad = activo.cantidad
                 precioActual = processed_data.get('precioActual', activo.precioActual)
@@ -180,12 +178,11 @@ class ActivoListCreate(generics.ListCreateAPIView):
                 ganancia = total_actual - total_inversion
                 ganancia_porcentaje = (ganancia / total_inversion) * 100 if total_inversion != 0 else 0
                 recomendacion = processed_data.get('recomendacion', activo.recomendacion)
-
-                # Calcular el porcentaje de cartera en base al total actual
                 porcentaje_cartera = (total_actual / total_actual_cartera) * 100 if total_actual_cartera != 0 else 0
+                
 
-                # Guardar los resultados procesados en el formato deseado
-                tickers_data.append({
+                activos.append({
+                    "id": activo.pk,
                     "ticker": activo.ticker,
                     "cantidad": cantidad,
                     "precioCompra": precioCompra,
@@ -195,32 +192,24 @@ class ActivoListCreate(generics.ListCreateAPIView):
                     "ganancia_porcentaje": ganancia_porcentaje,
                     "ganancia": ganancia,
                     "recomendacion": recomendacion,
-                    "porcentaje_cartera": porcentaje_cartera  # Añadir el porcentaje de cartera
+                    "porcentaje_cartera": porcentaje_cartera
                 })
 
-        return tickers_data
+        total_invertido = sum(a["total_inversion"] for a in activos)
+        diferencia_total = sum(a["ganancia"] for a in activos)
 
-    def list(self, request, *args, **kwargs):
-        tickers_data = self.get_queryset()
-
-        # Calcular totales generales
-        total_invertido = sum(ticker['total_inversion'] for ticker in tickers_data)
-        diferencia_total = sum(ticker['ganancia'] for ticker in tickers_data)
-
-        # Devolver los datos procesados junto con los totales
         return Response({
-            "activos": tickers_data,
-            "total_invertido": total_invertido,
-            "diferencia_total": diferencia_total
+            "tickers": activos,            # coincide con frontend
+            "totalSum": total_invertido,  # coincide con frontend
+            "invActual": total_actual_cartera,
+            "diferencia": (diferencia_total / total_invertido * 100) if total_invertido != 0 else 0
         })
 
-    
     def perform_create(self, serializer):
         if serializer.is_valid():
             ticker = serializer.validated_data['ticker']
             cantidad_comprada = serializer.validated_data['cantidad']
             precio_compra = serializer.validated_data['precioCompra']
-            
             try:
                 activo_existente = Activo.objects.get(ticker=ticker, usuario=self.request.user)
                 cantidad_anterior = activo_existente.cantidad
@@ -237,11 +226,8 @@ class ActivoListCreate(generics.ListCreateAPIView):
             print(serializer.errors)
 
     def get_precio_actual(self, symbol):
-        # Obtener datos históricos de yfinance
         data = yf.download(symbol, period="1d")
-        # Tomar el último precio (último día en el período)
         ultimo_precio = round(data['Close'].iloc[-1],3)
-        
         return ultimo_precio
 
 class ActivoDelete(generics.DestroyAPIView):
@@ -266,7 +252,6 @@ def portfolio_metrics(request):
     tickers = [a["ticker"] for a in activos]
     tickers_unicos = list(set(tickers + [indice]))
 
-
     precios_dict = {}
 
     for ticker in tickers_unicos:
@@ -279,7 +264,7 @@ def portfolio_metrics(request):
 
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date")
-        precios_dict[ticker] = df["close_price"]
+        precios_dict[ticker] = df["close_price"].astype(float)  # Asegurar float aquí
 
     if not precios_dict:
         return Response({"error": "No hay datos disponibles"}, status=400)
@@ -293,9 +278,9 @@ def portfolio_metrics(request):
     rendimientos = precios.pct_change().dropna()
 
     try:
-        # Calcular pesos
+        # Calcular pesos asegurando que cantidad y precio sean float
         pesos = np.array([
-            a["cantidad"] * precios[a["ticker"]].iloc[-1] for a in activos
+            float(a["cantidad"]) * float(precios[a["ticker"]].iloc[-1]) for a in activos
         ])
         pesos = pesos / np.sum(pesos)
 
@@ -603,7 +588,6 @@ def last_execution_date(request):
     
 def obtener_tickers(request):
     tickers = obtener_tickers_cedears()
-    print(tickers)
     return JsonResponse({"tickers": tickers})
 
 def health_check(request):    

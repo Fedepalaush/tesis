@@ -2,11 +2,10 @@ import React from 'react';
 import { Card } from '@tremor/react';
 import ReactTooltip from 'react-tooltip';
 
-export function CardUsageExample({ text, number, arrow, showTooltip, tooltipText }) {
+const CardUsageExample = ({ text, number, arrow, showTooltip, tooltipText }) => {
   const numberColorClass = arrow === '↑' ? 'text-green-600' : arrow === '↓' ? 'text-red-600' : '';
   const arrowColorClass = arrow === '↑' ? 'text-green-600' : arrow === '↓' ? 'text-red-600' : '';
-
-  const tooltipId = `tooltip-${text.replace(/\s+/g, '-')}`; // Generar un id único para el tooltip basado en el texto
+  const tooltipId = `tooltip-${text.replace(/\s+/g, '-')}`;
 
   return (
     <Card className="mx-auto max-w-xs h-max" decoration="top" decorationColor="indigo">
@@ -27,4 +26,6 @@ export function CardUsageExample({ text, number, arrow, showTooltip, tooltipText
       </ReactTooltip>
     </Card>
   );
-}
+};
+
+export default CardUsageExample;
