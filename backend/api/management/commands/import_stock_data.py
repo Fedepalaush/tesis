@@ -103,6 +103,7 @@ class Command(BaseCommand):
         extra_tickers = ['^GSPC', 'QQQ']
         tickers = extra_tickers + obtener_tickers_cedears()
         tickers = list(set(tickers))  # quitar duplicados
+        tickers =  ["AAPL", "MSFT", "TSLA",'^GSPC']
 
         ticker_blocks = [tickers[i:i + 50] for i in range(0, len(tickers), 50)]
 

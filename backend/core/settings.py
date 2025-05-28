@@ -138,7 +138,7 @@ DATABASES = {
         "NAME": os.getenv("DB_NAME", "tesis"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", "password"),
-        "HOST": os.getenv("DB_HOST", "timescaledb"),   # <-- nombre del servicio
+        "HOST": os.getenv("DB_HOST", "timescaledb"),  
         "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
@@ -147,7 +147,8 @@ DATABASES = {
 # Static & media
 # --------------------------------------------------------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = os.getenv("STATIC_ROOT", "/app/static")      # ✅ coincide con el volumen
+#STATIC_ROOT = os.getenv("STATIC_ROOT", "/app/static")      # ✅ coincide con el volumen
+STATIC_ROOT = '/static/'
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/app/media")         # opcional si montas media
 

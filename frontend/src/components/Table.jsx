@@ -2,10 +2,10 @@ import React, { useMemo } from "react";
 import { Button } from "@tremor/react";
 import { Card, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@tremor/react";
 
-export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
+export function TableUsageExample({ data, onOpenCompra, handleDeleteActivo }) {
   // Memoizar el cálculo de la suma total
   const totalSum = useMemo(() => {
-    return data.reduce((acc, item) => acc + item.precioCompra * item.cantidad, 0).toFixed(2);
+    return data.reduce((acc, item) => acc + item.precioActual * item.cantidad, 0).toFixed(2);
   }, [data]);
 
   // Memoizar las recomendaciones
@@ -47,7 +47,7 @@ export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
     <Card>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">Mis Inversiones</h3>
-        <Button variant="secondary" color="green" size="sm" onClick={() => openCompraSetter(true, "")}>
+        <Button variant="secondary" color="green" size="sm" onClick={() => onOpenCompra(true, "")}>
           +
         </Button>
       </div>
@@ -80,15 +80,16 @@ export function TableUsageExample({ data, openCompraSetter, deleteActivo }) {
               <TableCell>{`$${(item.total_actual).toFixed(2)}`}</TableCell>
               <TableCell>
                 <div className="flex gap-3">
-                  <Button variant="secondary" color="green" size="sm" onClick={() => openCompraSetter(true, item.ticker)}>
+                  <Button variant="secondary" color="green" size="sm" onClick={() => onOpenCompra(true, item.ticker)}>
                     +
                   </Button>
-                  <Button variant="secondary" color="red" size="sm" onClick={() => deleteActivo(item.id)}>
+                  <Button variant="secondary" color="red" size="sm" onClick={() => handleDeleteActivo(item.id)}>
                     -
                   </Button>
                 </div>
               </TableCell>
             </TableRow>
+
           ))}
           <TableRow>
             <TableCell colSpan={6}></TableCell>

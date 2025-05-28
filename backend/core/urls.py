@@ -26,7 +26,7 @@ urlpatterns = [
     #path('api-auth/', include('rest_framework.urls')),
 
     path('api/', include('api.urls')),
-    path('api/activo/', views.ActivoAPIView.as_view(), name='get_activo'),
+    path('activo/', views.ActivoAPIView.as_view(), name='get_activo'),
     path('get_fundamental/', get_fundamental_info, name='get_fundamental'),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path('api/portfolio/metrics/', views.portfolio_metrics, name='portfolio-metrics'),

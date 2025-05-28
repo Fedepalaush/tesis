@@ -7,12 +7,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl \
-    && pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Instalación de dependencias del sistema, incluyendo psql
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends curl postgresql-client && \
+    pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+    
 COPY . .
+
 
 # ¡NO exponemos puertos! El contenedor vive solo en la red interna
 # EXPOSE 8000   ← Eliminado

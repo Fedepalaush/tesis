@@ -6,25 +6,28 @@ services:
     build:
       context: ./backend
     volumes:
-      - ./data/static:/static                # ← genera aquí collectstatic
+      - ./data/static:/static
       - ./data/backend_state:/opt/state
     env_file: ./backend/.env
-    networks: [internal_network]
+    networks:
+      - internal_network
     restart: unless-stopped
     depends_on:
-      - timescaledb
-    # puerto **NO** expuesto al host
+      timescaledb:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
       context: ./frontend
     ports:
-      - "80:80"                              # único punto de entrada
+      - "80:80"
     depends_on:
       backend:
-        condition: service_started           # o service_healthy si añades healthcheck
+        condition: service_started
     volumes:
-      - ./data/static:/static                # lee los estáticos de Django
+      - ./data/static:/static
     networks:
       - internet_access
       - internal_network
@@ -44,10 +47,14 @@ services:
     networks:
       - internal_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 networks:
   internal_network:
     driver: bridge
-    internal: true
   internet_access:
     driver: bridge

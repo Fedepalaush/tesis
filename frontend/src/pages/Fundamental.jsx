@@ -4,6 +4,23 @@ import BaseLayout from "../components/BaseLayout";
 import Barchart from "../components/Barchart";
 import PieChartComponent from "../components/PieChartComponent";
 import TickerSelector from "../components/TickerSelector";
+import {
+  DollarSign,
+  TrendingDown,
+  PieChart,
+  Layers,
+  BarChart2,
+  Info,
+} from "lucide-react";
+
+const TooltipIcon = ({ text }) => (
+  <div className="relative group inline-block ml-1">
+    <Info className="w-4 h-4 text-gray-500 dark:text-gray-300 cursor-pointer" />
+    <div className="absolute hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded w-64 z-10 top-6 left-1/2 transform -translate-x-1/2 shadow-lg">
+      {text}
+    </div>
+  </div>
+);
 
 const Fundamental = () => {
   const [freeCashFlowData, setFreeCashFlowData] = useState([]);
@@ -11,19 +28,26 @@ const Fundamental = () => {
   const [ebitdaData, setEbitdaData] = useState([]);
   const [totalAssets, setTotalAssets] = useState([]);
   const [cashAndCashEquivalents, setCashAndCashEquivalents] = useState([]);
-  const [longTermDebt, setLongTermDebt] = useState(0);
-  const [currentDebt, setCurrentDebt] = useState(0);
+  const [longTermDebt, setLongTermDebt] = useState([]);
+  const [currentDebt, setCurrentDebt] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ticker, setTicker] = useState("MSFT");
+
+  const hasValidData = (data, key) => {
+    if (!data || data.length === 0) return false;
+    return data.some((item) => {
+      const val = item[key];
+      return val !== null && val !== undefined && !isNaN(val);
+    });
+  };
+
+  const isValidValue = (val) => val !== null && val !== undefined && !isNaN(val);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log(ticker)
         const data = await fetchFundamentalData(ticker);
-        console.log(data)
-        
 
         const cashFlow = JSON.parse(data.data.cash_flow);
         const balance = JSON.parse(data.data.balance);
@@ -78,20 +102,76 @@ const Fundamental = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Barchart data={freeCashFlowData} type="FreeCashFlow" />
-            <Barchart data={debtData} type="NetDebt" />
-            <div className="flex align-middle justify-center items-center">
-              <PieChartComponent
-                data={[
-                  { label: "Deuda a Largo Plazo", value: longTermDebt[0] },
-                  { label: "Deuda a Corto Plazo", value: currentDebt[0] },
-                ]}
-                title="Distribución de Deuda"
-              />
-            </div>
-            <Barchart data={cashAndCashEquivalents} type="Activos Corrientes" stacked={true} />
-            <Barchart data={totalAssets} type="TotalAssets" />
-            <Barchart data={ebitdaData} type="EBITDA" />
+            {hasValidData(freeCashFlowData, "FreeCashFlow") && (
+              <div>
+                <div className="flex items-center mb-1">
+                  <h2 className="text-white text-lg font-semibold">Flujo de Caja Libre</h2>
+                  <TooltipIcon text="Muestra cuánto dinero le queda a la empresa después de pagar todos sus gastos. Más alto es mejor." />
+                </div>
+                <Barchart data={freeCashFlowData} type="FreeCashFlow" />
+              </div>
+            )}
+
+            {hasValidData(debtData, "NetDebt") && (
+              <div>
+                <div className="flex items-center mb-1">
+                  <h2 className="text-white text-lg font-semibold">Deuda Neta</h2>
+                  <TooltipIcon text="Es la deuda total menos el efectivo disponible. Un valor más bajo indica menor endeudamiento neto." />
+                </div>
+                <Barchart data={debtData} type="NetDebt" />
+              </div>
+            )}
+
+            {longTermDebt.length > 0 &&
+              currentDebt.length > 0 &&
+              isValidValue(longTermDebt[0]?.LongTermDebt) &&
+              isValidValue(currentDebt[0]?.CurrentDebt) && (
+                <div>
+                  <div className="flex items-center mb-1">
+                    <h2 className="text-white text-lg font-semibold">Distribución de Deuda</h2>
+                    <TooltipIcon text="Muestra qué parte de la deuda es a corto y a largo plazo. Idealmente, una empresa saludable tiene una buena proporción entre ambas." />
+                  </div>
+                  <div className="flex align-middle justify-center items-center">
+                    <PieChartComponent
+                      data={[
+                        { label: "Deuda a Largo Plazo", value: longTermDebt[0] },
+                        { label: "Deuda a Corto Plazo", value: currentDebt[0] },
+                      ]}
+                      title="Distribución de Deuda"
+                    />
+                  </div>
+                </div>
+              )}
+
+            {hasValidData(cashAndCashEquivalents, "cash_equivalents") && (
+              <div>
+                <div className="flex items-center mb-1">
+                  <h2 className="text-white text-lg font-semibold">Activos Corrientes</h2>
+                  <TooltipIcon text="Incluye efectivo, inventario y cuentas por cobrar. Muestra los recursos que la empresa puede usar pronto." />
+                </div>
+                <Barchart data={cashAndCashEquivalents} type="Activos Corrientes" stacked={true} />
+              </div>
+            )}
+
+            {hasValidData(totalAssets, "TotalAssets") && (
+              <div>
+                <div className="flex items-center mb-1">
+                  <h2 className="text-white text-lg font-semibold">Activos Totales</h2>
+                  <TooltipIcon text="Refleja el tamaño total de los recursos de la empresa. Incluye todo lo que posee." />
+                </div>
+                <Barchart data={totalAssets} type="TotalAssets" />
+              </div>
+            )}
+
+            {hasValidData(ebitdaData, "EBITDA") && (
+              <div>
+                <div className="flex items-center mb-1">
+                  <h2 className="text-white text-lg font-semibold">EBITDA</h2>
+                  <TooltipIcon text="Muestra las ganancias antes de intereses, impuestos, depreciación y amortización. Es un indicador de rentabilidad." />
+                </div>
+                <Barchart data={ebitdaData} type="EBITDA" />
+              </div>
+            )}
           </div>
         </div>
       </div>

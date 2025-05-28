@@ -22,6 +22,7 @@ def obtener_datos_acciones(tickers, start_date=None, end_date=None):
 
             # Convertir los datos a un DataFrame
             df = pd.DataFrame(list(stock_data))
+            df['close_price'] = df['close_price'].astype(float)  # 🔧 Convertir Decimal a flo
             
             if df.empty:
                 print(f"{ticker}: No data found, symbol may be delisted")
