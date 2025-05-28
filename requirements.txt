@@ -1,2 +1,5 @@
 Django
 gunicorn
+django-filter
+python-json-logger
+drf-spectacular

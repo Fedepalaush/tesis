@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS api_stockdata (
 -- Crear indice para acelerar consultas por ticker y fecha
 CREATE INDEX IF NOT EXISTS idx_ticker_date ON api_stockdata (ticker, date);
 
--- Agregar restriccion de unicidad si no existe aun
+-- Agregar restricción de unicidad si no existe aún
 DO $$
 BEGIN
     IF NOT EXISTS (
