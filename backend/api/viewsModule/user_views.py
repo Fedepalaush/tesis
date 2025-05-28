@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
 
 from api.serializers import UserSerializer
-from api.views.base import CachedAPIView
+from api.viewsModule.base import CachedAPIView
 
 
 class CheckUserExistsView(CachedAPIView):

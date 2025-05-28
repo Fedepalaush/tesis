@@ -1,4 +1,4 @@
-from api.views import get_fundamental_info
+from api.viewsModule.analytics_views import FundamentalInfoView
 from django.contrib import admin
 from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
@@ -27,7 +27,7 @@ urlpatterns = [
 
     path('api/', include('api.urls')),
     path('activo/', views.ActivoAPIView.as_view(), name='get_activo'),
-    path('get_fundamental/', get_fundamental_info, name='get_fundamental'),
+    path('get_fundamental/', FundamentalInfoView.as_view(), name='get_fundamental'),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path('api/portfolio/metrics/', views.portfolio_metrics, name='portfolio-metrics'),
     path('api/tickers/', views.obtener_tickers, name='obtener_tickers'),

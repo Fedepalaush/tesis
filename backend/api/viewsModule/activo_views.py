@@ -12,9 +12,9 @@ from django.db.models import F
 
 from api.models import Activo
 from api.serializers import ActivoSerializer
-from api.services.activo_service import process_activo
+from api.services.activo_service import ActivoService
 from api.services.indicators import fetch_historical_data, calculate_analytics, validate_date_range
-from api.views.base import CachedAPIView
+from api.viewsModule.base import CachedAPIView
 
 
 class ActivoDetailView(CachedAPIView):
@@ -97,7 +97,8 @@ class ActivoListCreateView(generics.ListCreateAPIView):
 
         # Primera pasada: calcular valor total de la cartera
         for activo in activos:
-            processed_data = process_activo(activo)
+            service = ActivoService()
+            processed_data = service.process_activo(activo)
             if processed_data:
                 # Obtener valores
                 precio_actual = processed_data.get('precioActual', activo.precioActual)
@@ -106,7 +107,7 @@ class ActivoListCreateView(generics.ListCreateAPIView):
 
         # Segunda pasada: calcular valores para cada activo
         for activo in activos:
-            processed_data = process_activo(activo)
+            processed_data = service.process_activo(activo)
             if processed_data:
                 # Calcular valores
                 precio_compra = activo.precioCompra
@@ -134,7 +135,7 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                     "recomendacion": recomendacion,
                     "porcentaje_cartera": porcentaje_cartera
                 })
-
+        print(tickers_data)
         return tickers_data
 
     def list(self, request, *args, **kwargs) -> Response:

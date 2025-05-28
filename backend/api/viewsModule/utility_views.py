@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 
 from api.utils.cedear_scraper import obtener_tickers_cedears
-from api.views.base import CachedAPIView
+from api.viewsModule.base import CachedAPIView
 
 
 LAST_EXECUTION_FILE = "last_execution.log"

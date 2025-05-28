@@ -21,7 +21,7 @@ from django.db.models import Q
 from django.core.cache import cache
 import hashlib
 from .services.ema_logic import obtener_ema_signals
-from .services.activo_service import process_activo
+#from .services.activo_service import process_activo
 from . services.fundamental import get_fundamental_data
 from .services.backtesting import run_backtest_service
 from .services.retornos_mensuales import calcular_retornos_mensuales

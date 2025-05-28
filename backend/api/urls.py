@@ -5,14 +5,14 @@ This module defines the URL patterns for the API app, organized by functionality
 """
 from django.urls import path
 
-from api.views.activo_views import ActivoDetailView, ActivoListCreateView, ActivoDeleteView
-from api.views.user_views import CheckUserExistsView
-from api.views.analytics_views import (
+from api.viewsModule.activo_views import ActivoDetailView, ActivoListCreateView, ActivoDeleteView
+from api.viewsModule.user_views import CheckUserExistsView
+from api.viewsModule.analytics_views import (
     RetornosMensualesView, FundamentalInfoView, CorrelationMatrixView,
     SharpeRatioView, BacktestView, PivotPointsView, AgrupamientoView,
     EMASignalsView, DividendosView, EntrenarModeloView, PortfolioMetricsView
 )
-from api.views.utility_views import HealthCheckView, LastExecutionDateView, TickersView
+from api.viewsModule.utility_views import HealthCheckView, LastExecutionDateView, TickersView
 
 # URL patterns grouped by functionality
 urlpatterns = [
