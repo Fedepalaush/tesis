@@ -31,6 +31,9 @@ function Home() {
     diferencia,
   } = useActivos();
 
+  console.log('activosss')
+  
+  console.log(activos)
   const { volatilidadData, betaData } = usePortfolioMetrics(activos);
 
   if (isLoading) {

@@ -142,6 +142,7 @@ export const fetchFundamentalData = async (ticker) => {
 // Obtener todos los activos
 export const getActivos = async () => {
   const response = await api.get("/api/activos/");
+  console.log(response)
   return response.data; // Devuelve los datos
 };
 
@@ -161,10 +162,19 @@ export const createActivo = async (ticker, precioCompra, cantidad) => {
   return response.status; // Devuelve el estado de la respuesta
 };
 
-export const getPortfolioMetrics = async (activos, indice) => {
-  const response = await api.post("/api/portfolio/metrics/", {
-    activos,
-    indice_referencia: indice
-  });
-  return response.data;
+export const getPortfolioMetrics = async (activos, indice = "^GSPC") => {
+  try {
+    console.log("📡 Enviando request con:", { activos, indice });
+
+    const response = await api.post("portfolio-metrics/", {
+      activos,
+      indice_referencia: indice,
+    });
+
+    console.log("📥 Respuesta recibida:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error en getPortfolioMetrics:", error);
+    throw error;
+  }
 };

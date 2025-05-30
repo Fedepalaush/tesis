@@ -18,10 +18,12 @@ const useActivos = () => {
     setLoading(true);
     try {
       const data = await getActivos();
-      setActivos(data.tickers || []);
-      setTotalSum(data.totalSum || 0);
+      console.log('soy data')
+      console.log(data)
+      setActivos(data.activos || []);
+      setTotalSum(data.total_invertido || 0);
       setInvActual(data.invActual || 0);
-      setDiferencia(data.diferencia || 0);
+      setDiferencia(data.diferencia_total || 0);
     } catch (error) {
       console.error("Error al cargar los activos:", error);
       setActivos([]);

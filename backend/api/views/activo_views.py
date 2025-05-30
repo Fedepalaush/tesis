@@ -86,23 +86,25 @@ class ActivoDetailView(CachedAPIView):
 
 class ActivoListCreateView(generics.ListCreateAPIView):
     """
-    Vista para listar y crear activos.
+    Vista para listar y crear activos con cálculos personalizados.
     """
     serializer_class = ActivoSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self) -> List[Dict[str, Any]]:
+    def list(self, request, *args, **kwargs) -> Response:
         """
-        Obtiene la lista de activos para el usuario actual.
+        Listar activos con valores calculados y totales.
         
+        Args:
+            request: El objeto de solicitud HTTP.
+            
         Returns:
-            List[Dict[str, Any]]: Lista de activos con valores calculados.
+            Response: El objeto de respuesta HTTP con datos de activos.
         """
-        user = self.request.user
+        user = request.user
         activos = Activo.objects.filter(usuario=user)
 
-        # Inicializar variables para cálculos de cartera
-        tickers_data = []
+        tickers = []
         total_actual_cartera = 0
 
         # Primera pasada: calcular valor total de la cartera
@@ -110,16 +112,15 @@ class ActivoListCreateView(generics.ListCreateAPIView):
             service = ActivoService()
             processed_data = service.process_activo(activo)
             if processed_data:
-                # Obtener valores
                 precio_actual = processed_data.get('precioActual', activo.precioActual)
                 cantidad = activo.cantidad
                 total_actual_cartera += precio_actual * cantidad
 
-        # Segunda pasada: calcular valores para cada activo
+        # Segunda pasada: procesar cada activo con sus cálculos
         for activo in activos:
+            service = ActivoService()
             processed_data = service.process_activo(activo)
             if processed_data:
-                # Calcular valores
                 precio_compra = activo.precioCompra
                 cantidad = activo.cantidad
                 precio_actual = processed_data.get('precioActual', activo.precioActual)
@@ -128,12 +129,9 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                 ganancia = total_actual - total_inversion
                 ganancia_porcentaje = (ganancia / total_inversion) * 100 if total_inversion != 0 else 0
                 recomendacion = processed_data.get('recomendacion', activo.recomendacion)
-
-                # Calcular porcentaje de cartera
                 porcentaje_cartera = (total_actual / total_actual_cartera) * 100 if total_actual_cartera != 0 else 0
 
-                # Guardar resultados procesados
-                tickers_data.append({
+                tickers.append({
                     "ticker": activo.ticker,
                     "cantidad": cantidad,
                     "precioCompra": precio_compra,
@@ -145,30 +143,16 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                     "recomendacion": recomendacion,
                     "porcentaje_cartera": porcentaje_cartera
                 })
-        print(tickers_data)
-        return tickers_data
 
-    def list(self, request, *args, **kwargs) -> Response:
-        """
-        Listar activos con totales calculados.
-        
-        Args:
-            request: El objeto de solicitud HTTP.
-            
-        Returns:
-            Response: El objeto de respuesta HTTP con datos de activos.
-        """
-        tickers_data = self.get_queryset()
+        # Totales generales
+        total_invertido = sum(ticker['total_inversion'] for ticker in tickers)
+        diferencia_total = sum(ticker['ganancia'] for ticker in tickers)
 
-        # Calcular totales generales
-        total_invertido = sum(ticker['total_inversion'] for ticker in tickers_data)
-        diferencia_total = sum(ticker['ganancia'] for ticker in tickers_data)
-
-        # Devolver datos procesados con totales
         return Response({
-            "activos": tickers_data,
+            "activos": tickers,
             "total_invertido": total_invertido,
-            "diferencia_total": diferencia_total
+            "diferencia_total": diferencia_total,
+
         })
 
     def perform_create(self, serializer) -> None:

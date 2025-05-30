@@ -1,31 +1,40 @@
 import { useState, useEffect } from "react";
 import { getPortfolioMetrics } from "../api";
 
-export const usePortfolioMetrics = (activos) => {
-  const [metrics, setMetrics] = useState({ volatilidadData: null, betaData: null });
+export const usePortfolioMetrics = (activos, indice = "^GSPC") => {
+  const [metrics, setMetrics] = useState({
+    volatilidadData: null,
+    betaData: null,
+  });
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        if (activos.length > 0) {
-          const data = await getPortfolioMetrics(activos);
+        if (Array.isArray(activos) && activos.length > 0) {
+          console.log("🔄 Ejecutando fetchMetrics...");
+          const data = await getPortfolioMetrics(activos, indice);
+
           const volatilidadData = data.fechas.map((fecha, index) => ({
             date: fecha,
             value: data.volatilidades[index],
           }));
+
           const betaData = data.fechas.map((fecha, index) => ({
             date: fecha,
             value: data.betas[index],
           }));
+
           setMetrics({ volatilidadData, betaData });
+        } else {
+          console.log("⚠️ No se ejecuta fetchMetrics: activos está vacío");
         }
       } catch (error) {
-        console.error("Error al obtener métricas:", error);
+        console.error("❌ Error al obtener métricas:", error);
       }
     };
 
     fetchMetrics();
-  }, [activos]);
+  }, [activos, indice]);
 
   return metrics;
 };
