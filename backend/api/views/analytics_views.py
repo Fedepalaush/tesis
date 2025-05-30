@@ -24,7 +24,7 @@ from api.services.pivot import calculate_pivots
 from api.services.agrupacion import agrupar_acciones
 from api.services.ema_logic import obtener_ema_signals
 from api.services.entrenamiento import entrenar_modelo_service
-from api.viewsModule.base import CachedAPIView
+from api.views.base import CachedAPIView
 
 
 class RetornosMensualesView(CachedAPIView):

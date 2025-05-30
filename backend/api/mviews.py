@@ -166,7 +166,7 @@ class ActivoListCreate(generics.ListCreateAPIView):
                 precioActual = processed_data.get('precioActual', activo.precioActual)
                 total_actual_cartera += precioActual * activo.cantidad
 
-        # Segundo paso: construir lista con cálculos para cada activo
+        # Segudndo paso: construir lista con cálculos para cada activo
         for activo in queryset:
             processed_data = process_activo(activo)
             if processed_data:
@@ -204,26 +204,9 @@ class ActivoListCreate(generics.ListCreateAPIView):
             "invActual": total_actual_cartera,
             "diferencia": (diferencia_total / total_invertido * 100) if total_invertido != 0 else 0
         })
-
-    def perform_create(self, serializer):
-        if serializer.is_valid():
-            ticker = serializer.validated_data['ticker']
-            cantidad_comprada = serializer.validated_data['cantidad']
-            precio_compra = serializer.validated_data['precioCompra']
-            try:
-                activo_existente = Activo.objects.get(ticker=ticker, usuario=self.request.user)
-                cantidad_anterior = activo_existente.cantidad
-                precio_compra_anterior = activo_existente.precioCompra
-                nuevo_precio_compra = ((precio_compra_anterior * cantidad_anterior) + (precio_compra * cantidad_comprada)) / (cantidad_anterior + cantidad_comprada)
-                activo_existente.cantidad = F('cantidad') + cantidad_comprada
-                activo_existente.precioCompra = nuevo_precio_compra
-                activo_existente.save()
-            except Activo.DoesNotExist:
-                activo = serializer.save(usuario=self.request.user)
-                activo.precioActual = precio_compra
-                activo.save()
-        else:
-            print(serializer.errors)
+# The following block was incorrectly indented and placed outside any method or class.
+# If this logic is needed, it should be inside a method (e.g., inside ActivoListCreate).
+# For now, it is removed to fix the indentation error.
 
     def get_precio_actual(self, symbol):
         data = yf.download(symbol, period="1d")

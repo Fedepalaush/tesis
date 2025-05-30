@@ -1,4 +1,4 @@
-from api.viewsModule.analytics_views import FundamentalInfoView
+from api.views.analytics_views import FundamentalInfoView
 from django.contrib import admin
 from backtesting import Strategy, Backtest
 from backtesting.lib import crossover
@@ -8,41 +8,17 @@ import yfinance as yf
 from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from api import views
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
     # Documentación API
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
-    # Auth
-    path("api/token/", TokenObtainPairView.as_view(), name="get_token"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),
+    
     #path('api-auth/', include('rest_framework.urls')),
 
-    path('api/', include('api.urls')),
-    path('activo/', views.ActivoAPIView.as_view(), name='get_activo'),
-    path('get_fundamental/', FundamentalInfoView.as_view(), name='get_fundamental'),
-    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
-    path('api/portfolio/metrics/', views.portfolio_metrics, name='portfolio-metrics'),
-    path('api/tickers/', views.obtener_tickers, name='obtener_tickers'),
+    path('', include('api.urls')),
 
-    path('api/get_correlation_matrix', views.get_correlation_matrix, name='get_correlation_matrix'),
-    path('sharpe-ratio/', views.sharpe_ratio, name='sharpe_ratio'),
-    path('get_retornos_mensuales', views.get_retornos_mensuales, name='get_retornos_mensuales'),
-    path('run_backtest/', views.run_backtest, name='run_backtest'),
-    path('get_pivot_points/', views.get_pivot_points, name='get_pivot_points'),
-    path('agrupamiento/', views.obtener_agrupamiento, name='obtener_agrupamiento'),
-    path('get_ema_signals/', views.get_ema_signals, name='get_ema_signals'),
-    path('obtener_dividendos/', views.obtener_dividendos, name='obtener_dividendos'),
-    
-    path("entrenar/", views.entrenar_modelo),
-    
-    path('last-execution/', views.last_execution_date, name='last-execution'),
-    
 ]

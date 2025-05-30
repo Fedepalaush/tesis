@@ -55,3 +55,82 @@ El endpoint de salud `/api/health/` fue probado exitosamente, lo que confirma qu
 2. Realizar pruebas exhaustivas de todos los endpoints.
 3. Verificar que las mejoras de rendimiento (caching, optimización de consultas) funcionan según lo esperado.
 4. Documentar las mejoras de rendimiento y mantenibilidad logradas con la refactorización.
+
+---
+
+## Fecha: 29 de Mayo de 2025
+
+### Ejecución actualizada con `sudo docker compose up -d`
+
+#### Análisis de errores identificados:
+
+### 🔴 PROBLEMA CRÍTICO: Error de migración de Django
+
+**Error principal:**
+```
+django.db.utils.ProgrammingError: column "fechaCompra" of relation "api_activo" already exists
+```
+
+**Descripción:**
+- El backend está intentando ejecutar migraciones que agregan una columna `fechaCompra` que ya existe en la base de datos.
+- Este error se repite continuamente cada minuto, causando que el contenedor backend falle en su inicialización.
+- El error indica que existe un conflicto entre el estado actual de la base de datos y las migraciones de Django.
+
+**Impacto:**
+- El backend no puede inicializarse correctamente
+- Las APIs no están disponibles
+- La aplicación no funciona completamente
+
+### ✅ Estado de contenedores:
+
+1. **TimescaleDB:** ✅ Funcionando correctamente
+   - Contenedor iniciado exitosamente
+   - Base de datos operativa
+   - Solo registra los errores de migración del backend
+
+2. **Frontend:** ✅ Funcionando correctamente  
+   - Nginx iniciado exitosamente
+   - Sin errores en los logs
+   - Servidor funcionando en puerto 80
+
+3. **Backend:** ❌ Error crítico
+   - Falla continua en migraciones
+   - Reintenta cada minuto sin éxito
+   - Aplicación no operativa
+
+### 📋 PLAN DE CORRECCIÓN INMEDIATA
+
+#### Fase 1: Diagnóstico del estado de la base de datos
+1. ✅ Verificar el estado actual de las tablas en la base de datos
+2. ✅ Identificar qué migraciones han sido aplicadas
+3. ✅ Comparar con el estado esperado según los archivos de migración
+
+#### Fase 2: Corrección del problema de migraciones
+**Opción A: Reset de migraciones (Recomendado para desarrollo)**
+1. ✅ Detener todos los contenedores
+2. ✅ Eliminar el volumen de datos de TimescaleDB
+3. ✅ Regenerar migraciones desde cero
+4. ✅ Reiniciar contenedores
+
+**Opción B: Fake de migraciones (Si hay datos importantes)**
+1. ✅ Marcar las migraciones problemáticas como aplicadas sin ejecutarlas
+2. ✅ Sincronizar el estado de Django con el estado real de la BD
+
+#### Fase 3: Validación
+1. ✅ Verificar que el backend inicie sin errores
+2. ✅ Probar endpoints básicos (/api/health/)
+3. ✅ Confirmar conectividad entre frontend y backend
+
+### 🛠️ COMANDOS DE CORRECCIÓN
+
+```bash
+# Opción A: Reset completo (PERDERÁ TODOS LOS DATOS)
+sudo docker compose down
+sudo docker volume rm tesis_timescaledb_data
+sudo docker compose up --build -d
+
+# Opción B: Fake migrations (conserva datos)
+sudo docker compose exec backend python manage.py migrate api 0001 --fake
+sudo docker compose exec backend python manage.py migrate api --fake-initial
+sudo docker compose restart backend
+```

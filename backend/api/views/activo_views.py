@@ -14,7 +14,7 @@ from api.models import Activo
 from api.serializers import ActivoSerializer
 from api.services.activo_service import ActivoService
 from api.services.indicators import fetch_historical_data, calculate_analytics, validate_date_range
-from api.viewsModule.base import CachedAPIView
+from api.views.base import CachedAPIView
 
 
 class ActivoDetailView(CachedAPIView):
@@ -22,7 +22,17 @@ class ActivoDetailView(CachedAPIView):
     Vista para obtener información detallada sobre un activo específico.
     """
     permission_classes = [AllowAny]
-    
+    def post(self, request):
+        """
+        Obtiene información detallada para un ticker específico.
+        
+        Args:
+            request: El objeto de solicitud HTTP.
+            
+        Returns:
+            Response: El objeto de respuesta HTTP con datos del activo.
+        """
+        return self.get(request)
     def get(self, request):
         """
         Obtiene información detallada para un ticker específico.
@@ -194,6 +204,7 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                 activo.save()
         else:
             print(serializer.errors)
+
 
 
 class ActivoDeleteView(generics.DestroyAPIView):

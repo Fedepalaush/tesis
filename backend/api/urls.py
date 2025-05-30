@@ -5,17 +5,23 @@ This module defines the URL patterns for the API app, organized by functionality
 """
 from django.urls import path
 
-from api.viewsModule.activo_views import ActivoDetailView, ActivoListCreateView, ActivoDeleteView
-from api.viewsModule.user_views import CheckUserExistsView
-from api.viewsModule.analytics_views import (
-    RetornosMensualesView, FundamentalInfoView, CorrelationMatrixView,
-    SharpeRatioView, BacktestView, PivotPointsView, AgrupamientoView,
-    EMASignalsView, DividendosView, EntrenarModeloView, PortfolioMetricsView
-)
-from api.viewsModule.utility_views import HealthCheckView, LastExecutionDateView, TickersView
+
+from api.views import *
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 # URL patterns grouped by functionality
 urlpatterns = [
+
+    # Authentication
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Auth
+    path("api/token/", TokenObtainPairView.as_view(), name="get_token"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),
+
     # Activos (Financial assets)
     path("activos/", ActivoListCreateView.as_view(), name="lista-activo"),
     path("activos/delete/<int:pk>/", ActivoDeleteView.as_view(), name="borrar-activo"),
