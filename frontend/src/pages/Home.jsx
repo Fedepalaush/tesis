@@ -31,10 +31,10 @@ function Home() {
     diferencia,
   } = useActivos();
 
-  console.log('activosss')
-  
-  console.log(activos)
   const { volatilidadData, betaData } = usePortfolioMetrics(activos);
+
+  console.log(volatilidadData)
+  console.log(betaData)
 
   if (isLoading) {
     return (
@@ -81,17 +81,25 @@ function Home() {
             )}
           </section>
 
-          {/* Gráficos */}
-          <section className="mt-6 max-w-7xl flex flex-col md:flex-row gap-6">
-        
-            <div className="md:w-1/2">
-              <DonutChart data={activos} />
+              {/* Gráficos */}
+      <section className="mt-6 max-w-7xl flex flex-col md:flex-row gap-6">
+        <div className="md:w-1/2">
+          <DonutChart data={activos} />
+        </div>
+        <div className="md:w-1/2 flex flex-col gap-4">
+          {volatilidadData && volatilidadData.length > 0 && betaData && betaData.length > 0 ? (
+            <>
+              <VolatilidadYBetaGrafico title="Volatilidad" data={volatilidadData} strokeColor="#8884d8" />
+              <VolatilidadYBetaGrafico title="Beta" data={betaData} strokeColor="#82ca9d" />
+            </>
+          ) : (
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              Cargando datos de Volatilidad y Beta...
             </div>
-            <div className="md:w-1/2 flex flex-col gap-4">
-              <VolatilidadYBetaGrafico title="Volatilidad" data={activos.length > 0 ? volatilidadData : []} strokeColor="#8884d8" />
-              <VolatilidadYBetaGrafico title="Beta" data={activos.length > 0 ? betaData : []} strokeColor="#82ca9d" />
-            </div>
-          </section>
+          )}
+        </div>
+      </section>
+
         </main>
       </div>
     </div>

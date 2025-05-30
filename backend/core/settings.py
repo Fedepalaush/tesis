@@ -129,6 +129,18 @@ CACHES = {
     }
 }
 
+# Base de datos – Maquina LOCAL
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': 'tesis',
+#        'USER': 'postgres',
+#        'PASSWORD': 'vale',
+#        'HOST': 'localhost',
+#        'PORT': '5432',
+#    }
+#}
+
 # --------------------------------------------------------------------
 # Base de datos – Docker Compose
 # --------------------------------------------------------------------

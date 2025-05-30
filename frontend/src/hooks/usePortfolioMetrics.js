@@ -12,18 +12,21 @@ export const usePortfolioMetrics = (activos, indice = "^GSPC") => {
       try {
         if (Array.isArray(activos) && activos.length > 0) {
           console.log("🔄 Ejecutando fetchMetrics...");
-          const data = await getPortfolioMetrics(activos, indice);
-
+          const response = await getPortfolioMetrics(activos, indice);
+          // response tiene la estructura completa: {status, message, data}
+          
+          const { data } = response; // extraes el objeto con fechas, volatilidades, betas
+          
           const volatilidadData = data.fechas.map((fecha, index) => ({
             date: fecha,
             value: data.volatilidades[index],
           }));
-
+          
           const betaData = data.fechas.map((fecha, index) => ({
             date: fecha,
             value: data.betas[index],
           }));
-
+          
           setMetrics({ volatilidadData, betaData });
         } else {
           console.log("⚠️ No se ejecuta fetchMetrics: activos está vacío");

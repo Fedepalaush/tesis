@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS api_stockdata (
     high_price FLOAT8,
     low_price FLOAT8,
     close_price FLOAT8,
-    volume BIGINT
+    volume FLOAT8
 );
 -- Crear indice para acelerar consultas por ticker y fecha
 CREATE INDEX IF NOT EXISTS idx_ticker_date ON api_stockdata (ticker, date);

@@ -458,14 +458,14 @@ class PortfolioMetricsView(CachedAPIView):
     View for calculating portfolio metrics.
     """
     permission_classes = []
-    
+
     def post(self, request):
         """
         Calculate portfolio metrics.
-        
+
         Args:
             request: The HTTP request object.
-            
+
         Returns:
             Response: The HTTP response object with portfolio metrics.
         """
@@ -474,6 +474,13 @@ class PortfolioMetricsView(CachedAPIView):
 
         if not activos:
             return self.error_response("No hay activos", status.HTTP_400_BAD_REQUEST)
+
+        # Convertir cantidades a float para evitar conflictos con Decimal
+        try:
+            for a in activos:
+                a["cantidad"] = float(a["cantidad"])
+        except (ValueError, TypeError, KeyError):
+            return self.error_response("Cantidad inválida en uno de los activos", status.HTTP_400_BAD_REQUEST)
 
         tickers = [a["ticker"] for a in activos]
         tickers_unicos = list(set(tickers + [indice]))
@@ -489,6 +496,7 @@ class PortfolioMetricsView(CachedAPIView):
                 continue
 
             df["date"] = pd.to_datetime(df["date"])
+            df["close_price"] = df["close_price"].astype(float)  # Asegurar que los precios sean float
             df = df.set_index("date")
             precios_dict[ticker] = df["close_price"]
 
@@ -504,7 +512,7 @@ class PortfolioMetricsView(CachedAPIView):
         rendimientos = precios.pct_change().dropna()
 
         try:
-            # Calculate weights
+            # Calcular pesos del portafolio
             pesos = np.array([
                 a["cantidad"] * precios[a["ticker"]].iloc[-1] for a in activos
             ])
@@ -514,7 +522,7 @@ class PortfolioMetricsView(CachedAPIView):
             rend_port = rendimientos[activos_tickers].dot(pesos)
             rend_indice = rendimientos[indice]
 
-            # Take the last 7 available dates
+            # Tomar las últimas 7 fechas disponibles
             ultimos_dias = rend_port.index[-7:]
 
             volatilidades = []
@@ -522,7 +530,7 @@ class PortfolioMetricsView(CachedAPIView):
             fechas = []
 
             for fecha in ultimos_dias:
-                ventana_inicio = rend_port.index.get_loc(fecha) - 4  # 5-day window
+                ventana_inicio = rend_port.index.get_loc(fecha) - 4  # Ventana de 5 días
                 if ventana_inicio < 0:
                     continue
 
@@ -532,8 +540,7 @@ class PortfolioMetricsView(CachedAPIView):
                 if len(ventana_port) < 3:
                     continue
 
-                vol = ventana_port.std()
-                vol = vol * 100 
+                vol = ventana_port.std() * 100
                 beta = np.cov(ventana_port, ventana_indice)[0, 1] / ventana_indice.var()
 
                 if np.isfinite(vol) and np.isfinite(beta):

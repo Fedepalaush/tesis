@@ -1,7 +1,7 @@
 import axios from "axios"
 import { ACCESS_TOKEN } from "./constants"
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000/api/";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL
@@ -148,6 +148,9 @@ export const getActivos = async () => {
 
 // Eliminar un activo
 export const deleteActivo = async (id) => {
+  console.log(id)
+  console.log(id)
+  console.log(id)
   const response = await api.delete(`/api/activos/delete/${id}/`);
   return response.status; // Devuelve el estado de la respuesta
 };
@@ -166,7 +169,7 @@ export const getPortfolioMetrics = async (activos, indice = "^GSPC") => {
   try {
     console.log("📡 Enviando request con:", { activos, indice });
 
-    const response = await api.post("portfolio-metrics/", {
+    const response = await api.post("/api/portfolio-metrics/", {
       activos,
       indice_referencia: indice,
     });

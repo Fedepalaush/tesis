@@ -132,6 +132,7 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                 porcentaje_cartera = (total_actual / total_actual_cartera) * 100 if total_actual_cartera != 0 else 0
 
                 tickers.append({
+                    "id":activo.pk,
                     "ticker": activo.ticker,
                     "cantidad": cantidad,
                     "precioCompra": precio_compra,
@@ -158,36 +159,30 @@ class ActivoListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer) -> None:
         """
         Crear un nuevo activo o actualizar uno existente.
-        
-        Args:
-            serializer: El serializador de activo con datos validados.
         """
-        if serializer.is_valid():
-            ticker = serializer.validated_data['ticker']
-            cantidad_comprada = serializer.validated_data['cantidad']
-            precio_compra = serializer.validated_data['precioCompra']
-            
-            try:
-                # Intentar actualizar un activo existente
-                activo_existente = Activo.objects.get(ticker=ticker, usuario=self.request.user)
-                cantidad_anterior = activo_existente.cantidad
-                precio_compra_anterior = activo_existente.precioCompra
-                
-                # Calcular precio promedio ponderado
-                nuevo_precio_compra = ((precio_compra_anterior * cantidad_anterior) + 
-                                      (precio_compra * cantidad_comprada)) / (cantidad_anterior + cantidad_comprada)
-                
-                # Actualizar activo existente
-                activo_existente.cantidad = F('cantidad') + cantidad_comprada
-                activo_existente.precioCompra = nuevo_precio_compra
-                activo_existente.save()
-            except Activo.DoesNotExist:
-                # Crear nuevo activo
-                activo = serializer.save(usuario=self.request.user)
-                activo.precioActual = precio_compra
-                activo.save()
-        else:
-            print(serializer.errors)
+        ticker = serializer.validated_data['ticker']
+        cantidad_comprada = serializer.validated_data['cantidad']
+        precio_compra = serializer.validated_data['precioCompra']
+        
+        try:
+            # Buscar activo existente para el usuario
+            activo_existente = Activo.objects.get(ticker=ticker, usuario=self.request.user)
+            cantidad_anterior = activo_existente.cantidad
+            precio_compra_anterior = activo_existente.precioCompra
+
+            # Calcular precio promedio ponderado
+            nuevo_precio_compra = ((precio_compra_anterior * cantidad_anterior) +
+                                (precio_compra * cantidad_comprada)) / (cantidad_anterior + cantidad_comprada)
+
+            # Actualizar campos y guardar
+            activo_existente.cantidad = F('cantidad') + cantidad_comprada
+            activo_existente.precioCompra = nuevo_precio_compra
+            activo_existente.save()
+        except Activo.DoesNotExist:
+            # Crear nuevo activo si no existe
+            activo = serializer.save(usuario=self.request.user)
+            activo.precioActual = precio_compra
+            activo.save()
 
 
 

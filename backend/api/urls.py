@@ -1,35 +1,26 @@
-"""
-URL patterns for the API app.
-
-This module defines the URL patterns for the API app, organized by functionality.
-"""
 from django.urls import path
-
-
 from api.views import *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-# URL patterns grouped by functionality
 urlpatterns = [
-
-    # Authentication
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
     # Auth
     path("token/", TokenObtainPairView.as_view(), name="get_token"),
     path("token/refresh/", TokenRefreshView.as_view(), name="refresh"),
 
-    # Activos (Financial assets)
+    # Schema / Docs
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Activos
     path("activos/", ActivoListCreateView.as_view(), name="lista-activo"),
     path("activos/delete/<int:pk>/", ActivoDeleteView.as_view(), name="borrar-activo"),
     path("activo/", ActivoDetailView.as_view(), name="detalle-activo"),
-    
-    # Users
+
+    # Usuarios
     path('usuarios/exists/<str:username>/', CheckUserExistsView.as_view(), name='check-user-exists'),
-    
+
     # Analytics
     path('retornos-mensuales/', RetornosMensualesView.as_view(), name='retornos-mensuales'),
     path('fundamental/', FundamentalInfoView.as_view(), name='fundamental-info'),
@@ -42,7 +33,7 @@ urlpatterns = [
     path('dividendos/', DividendosView.as_view(), name='dividendos'),
     path('entrenar-modelo/', EntrenarModeloView.as_view(), name='entrenar-modelo'),
     path('portfolio-metrics/', PortfolioMetricsView.as_view(), name='portfolio-metrics'),
-    
+
     # Utilities
     path('health/', HealthCheckView.as_view(), name='health_check'),
     path('last-execution/', LastExecutionDateView.as_view(), name='last-execution'),
