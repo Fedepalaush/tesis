@@ -1,6 +1,6 @@
 // hooks/useEntrenamiento.js
 import { useState } from "react";
-import axios from "axios";
+import api from "../api";
 
 export const useEntrenamiento = () => {
   const [resultado, setResultado] = useState(null);
@@ -10,12 +10,7 @@ export const useEntrenamiento = () => {
     setLoading(true);
     setResultado(null);
     try {
-      const token = localStorage.getItem("token");
-      const { data } = await axios.post("http://localhost:8000/entrenar/", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const { data } = await api.post("/entrenar/", formData);
       setResultado(data);
     } catch (error) {
       console.error(error);

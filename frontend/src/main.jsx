@@ -11,8 +11,10 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 });
 
+const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 // Primero pedimos los tickers al backend
-axios.get('http://localhost:8000/api/tickers/')
+axios.get(`${apiBase}/tickers/`)
   .then(res => {
     // Montamos la app pasando los tickers al contexto
     ReactDOM.createRoot(document.getElementById('root')).render(

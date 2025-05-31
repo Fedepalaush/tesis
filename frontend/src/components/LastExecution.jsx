@@ -8,7 +8,8 @@ const LastExecution = () => {
   useEffect(() => {
     const fetchExecution = async () => {
       try {
-        const execResponse = await fetch("http://localhost:8000/last-execution/");
+        const apiBase = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || "http://localhost:8000";
+        const execResponse = await fetch(`${apiBase}/last-execution/`);
         const execData = await execResponse.json();
         setLastExecution(execData.last_execution);
         setShowToast(true);

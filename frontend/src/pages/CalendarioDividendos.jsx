@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
 import BaseLayout from "../components/BaseLayout";
 import { useTickers } from "../TickersContext";
+import api from "../api";
 
 const months = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -44,7 +44,7 @@ const DividendCalendar = () => {
       const params = new URLSearchParams();
       selectedTickers.forEach((ticker) => params.append("tickers", ticker));
 
-      const response = await axios.get("http://localhost:8000/obtener_dividendos/", { params });
+      const response = await api.get("/obtener_dividendos/", { params });
 
       setDividendosPorMes(response.data.dividendos);
       setError("");

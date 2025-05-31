@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import axios from "axios";
+import api from "./api";
 
 import "./App.css";
 
@@ -40,27 +40,7 @@ function App() {
   const [selectedParametro, setSelectedParametro] = useState("BA"); // Default value
   const [selectedTimeframe, setSelectedTimeframe] = useState("1d"); // Default value
 
-  /*   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("http://localhost:8000/my_custom_view/", {
-          params: {
-            ticker: selectedParametro,
-            timeframe: selectedTimeframe // Include selected timeframe in the request
-          },
-        });
-        setStockPrices(response.data);
-        setDataLoaded(true);
-      } catch (error) {
-        // Handle error
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-
-    // Cleanup function not needed in this case because there are no subscriptions or timers
-  }, [selectedParametro, selectedTimeframe]); // Fetch data when selectedParametro or selectedTimeframe changes */
+  // Eliminado: useEffect que llamaba a /my_custom_view/
 
   // Handler function for dropdown change
   /*   const handleParametroChange = (event) => {

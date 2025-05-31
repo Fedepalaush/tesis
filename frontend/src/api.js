@@ -1,10 +1,10 @@
 import axios from "axios"
 import { ACCESS_TOKEN } from "./constants"
 
-const API_BASE_URL = "http://localhost:8000/api/";
-
+// Usa la variable de entorno VITE_API_URL para configurar la baseURL de la API.
+// Ejemplo en .env: VITE_API_URL=http://localhost:8000/api
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000"
 })
 
 api.interceptors.request.use(
@@ -22,10 +22,11 @@ api.interceptors.request.use(
 
 export default api
 
+// --- FUNCIONES API ---
 
 export const fetchPivotPoints = async (ticker) => {
     try {
-      const response = await axios.get(`http://localhost:8000/get_pivot_points/`, {
+      const response = await api.get("/api/get_pivot_points/", {
         params: { ticker },
       });
       return response.data;
@@ -33,17 +34,13 @@ export const fetchPivotPoints = async (ticker) => {
       console.error("Error fetching data:", error);
       throw error;
     }
-  };
+};
 
-// Función para obtener la matriz de correlación
 export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate) => {
-  const tickersQueryString = selectedTickers
-    .map((ticker) => `tickers=${ticker}`)
-    .join('&');
-
+  const tickersQueryString = selectedTickers.map((ticker) => `tickers=${ticker}`).join('&');
   try {
-    const response = await axios.get(
-      `http://localhost:8000/api/get_correlation_matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`
+    const response = await api.get(
+      `/api/get_correlation_matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`
     );
     return response.data;
   } catch (error) {
@@ -52,86 +49,78 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
   }
 };
 
-  // Función para obtener los datos del Sharpe Ratio
-  export const fetchSharpeRatioData = async (sector, xYears, yYears) => {
+export const fetchSharpeRatioData = async (sector, xYears, yYears) => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/sharpe-ratio/?sector=${sector}&x_years=${xYears}&y_years=${yYears}`
+      const response = await api.get(
+        `/api/sharpe-ratio/`,
+        { params: { sector, x_years: xYears, y_years: yYears } }
       );
-      return response.data.sharpe_data; // Retornar solo los datos necesarios
+      return response.data.sharpe_data;
     } catch (error) {
-      console.error('Error al obtener los datos del Sharpe Ratio:', error);
+      console.error("Error al obtener los datos del Sharpe Ratio:", error);
       throw error;
     }
-  };
+};
 
-  // Función para obtener los retornos mensuales
-  export const fetchMonthlyReturns = async (ticker, years) => {
+export const fetchMonthlyReturns = async (ticker, years) => {
     try {
-      const response = await axios.get(
-        `http://localhost:8000/get_retornos_mensuales?ticker=${ticker}&years=${years}`
+      const response = await api.get(
+        `/api/get_retornos_mensuales`,
+        { params: { ticker, years } }
       );
-      return response.data; // Retorna los datos directamente
+      return response.data;
     } catch (error) {
       console.error("Error al obtener los retornos mensuales:", error);
-      throw error; // Lanza el error para manejarlo en el componente
+      throw error;
     }
-  };
+};
 
-// Función para obtener los datos del activo
 export const fetchActivoAnalysis = (ticker, startDate, endDate) => {
-  return api.get("api/activo/", {
+  return api.get("/api/activo/", {
     params: { ticker, start_date: startDate, end_date: endDate },
   });
 };
 
-
-  // Función para ejecutar el backtest
 export const runBacktest = (formData) => {
-  return axios.post(`${API_BASE_URL}/run_backtest/`, formData);
+  return api.post("/api/run_backtest/", formData);
 };
 
-  export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => {
+export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => {
     try {
-      const response = await axios.get("http://localhost:8000/get_ema_signals/", {
+      const response = await api.get("/api/get_ema_signals/", {
         params: {
           tickers,
           ema4,
           ema9,
-          ema18: useTriple ? ema18 : undefined, // Solo incluir ema18 si useTriple es verdadero
+          ema18: useTriple ? ema18 : undefined,
           useTriple,
         },
       });
-  
-      // Si los datos están en formato de cadena, convertir a JSON
       const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-  
-      return responseData; // Retornar los datos
+      return responseData;
     } catch (error) {
       console.error("Error fetching EMA signals:", error);
-      throw error; // Propagar el error para manejarlo en el componente
+      throw error;
     }
-  }; 
+};
 
-// Función para obtener datos de agrupamiento
 export const obtenerDatosAgrupamiento = async (tickers, parametros, startDate, endDate) => {
-  const response = await axios.get(`${API_BASE_URL}/agrupamiento/`, {
+  const response = await api.get(`/api/agrupamiento/`, {
     params: {
-      tickers: tickers.join(","), // Enviar tickers seleccionados
-      parametros: parametros.join(","), // Enviar parámetros seleccionados
+      tickers: tickers.join(","),
+      parametros: parametros.join(","),
       start_date: startDate,
       end_date: endDate,
     },
   });
   return response.data;
-};  
+};
 
 export const fetchFundamentalData = async (ticker) => {
   try {
-    const response = await axios.get("http://localhost:8000/get_fundamental/", {
+    const response = await api.get("/api/fundamental/", {
       params: { ticker },
     });
-    console.log(response)
     return response.data;
   } catch (error) {
     console.error("Error fetching fundamental data:", error);
@@ -139,45 +128,44 @@ export const fetchFundamentalData = async (ticker) => {
   }
 };
 
-// Obtener todos los activos
 export const getActivos = async () => {
   const response = await api.get("/api/activos/");
-  console.log(response)
-  return response.data; // Devuelve los datos
+  return response.data;
 };
 
-// Eliminar un activo
 export const deleteActivo = async (id) => {
-  console.log(id)
-  console.log(id)
-  console.log(id)
   const response = await api.delete(`/api/activos/delete/${id}/`);
-  return response.status; // Devuelve el estado de la respuesta
+  return response.status;
 };
 
-// Crear un activo
 export const createActivo = async (ticker, precioCompra, cantidad) => {
   const response = await api.post("/api/activos/", {
     ticker,
     precioCompra,
     cantidad,
   });
-  return response.status; // Devuelve el estado de la respuesta
+  return response.status;
 };
 
 export const getPortfolioMetrics = async (activos, indice = "^GSPC") => {
   try {
-    console.log("📡 Enviando request con:", { activos, indice });
-
     const response = await api.post("/api/portfolio-metrics/", {
       activos,
       indice_referencia: indice,
     });
-
-    console.log("📥 Respuesta recibida:", response.data);
     return response.data;
   } catch (error) {
     console.error("❌ Error en getPortfolioMetrics:", error);
+    throw error;
+  }
+};
+
+export const fetchTickers = async () => {
+  try {
+    const response = await api.get("/api/tickers/");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching tickers:", error);
     throw error;
   }
 };
