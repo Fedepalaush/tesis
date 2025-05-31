@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client"
 import axios from 'axios'
-import { setTickersBM } from './constants.js'
+import { TickersProvider } from './TickersContext.jsx';
 
 const client = new ApolloClient({
   uri: "api/graphql",
@@ -14,23 +14,22 @@ const client = new ApolloClient({
 // Primero pedimos los tickers al backend
 axios.get('http://localhost:8000/api/tickers/')
   .then(res => {
-    setTickersBM(res.data.tickers);
-    console.log(res.data.tickers)
-
-    // Luego montamos la app
+    // Montamos la app pasando los tickers al contexto
     ReactDOM.createRoot(document.getElementById('root')).render(
-      <ApolloProvider client={client}>
-        <App />
+      <ApolloProvider client={client}>        
+        <TickersProvider initialTickers={res.data.data.tickers}>
+          <App />
+        </TickersProvider>
       </ApolloProvider>
     );
   })
   .catch(error => {
     console.error('Error al cargar los tickers:', error);
-
-    // Igual montamos la app por si no son imprescindibles
     ReactDOM.createRoot(document.getElementById('root')).render(
       <ApolloProvider client={client}>
-        <App />
+        <TickersProvider initialTickers={[]}> {/* App igual funciona sin tickers */}
+          <App />
+        </TickersProvider>
       </ApolloProvider>
     );
   });

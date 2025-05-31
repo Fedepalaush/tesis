@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Plot from "react-plotly.js";
-import { tickersBM } from "../constants";
 import { fetchEMASignals } from "../api";
 import BaseLayout from "../components/BaseLayout";
+import { useTickers } from "../TickersContext";
 
 const MediasMoviles = () => {
   const [ema4, setEma4] = useState(4);
   const [ema9, setEma9] = useState(9);
   const [ema18, setEma18] = useState(18);
   const [useTriple, setUseTriple] = useState(true);
-  const [tickers, setTickers] = useState(tickersBM);
+  const { tickers } = useTickers();
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(false);
 

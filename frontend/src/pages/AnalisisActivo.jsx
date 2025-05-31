@@ -7,18 +7,20 @@ import StockChartDisplay from "../components/StockChartDisplay";
 import IndicatorGaugesDisplay from "../components/IndicatorGaugesDisplay";
 import RecommendationsBox from "../components/RecommendationsBox";
 import SemaforoSignalsDisplay from "../components/SemaforoSignalsDisplay";
-
+//impotar todas las constantes
+import { tickersBM } from "../constants"; // Asegúrate de que esta ruta sea correcta
 // Los hooks usualmente se mantienen como .js, pero ajusta la importación si también los renombraste a .jsx
 import useTickerForm from '../hooks/useTickerForm';
 import useStockData from '../hooks/useStockData';
 import useFinancialIndicators from '../hooks/useFinancialIndicators';
 import useRecommendations from '../hooks/useRecommendations';
+import { useTickers } from '../TickersContext';
 
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
+  const { tickers } = useTickers();
 
-  const {
-    tickers,
+  const {    
     ticker,
     startDate,
     endDate,

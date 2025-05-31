@@ -3,14 +3,14 @@ import BaseLayout from '../components/BaseLayout';
 import MultiTickerSelector from '../components/MultiTickerSelector';
 import DateRangePicker from '../components/DateRangePicker';
 import CorrelationMatrixPlot from '../components/CorrelationMatrixPlot';
-import { tickersBM } from '../constants';
-import { fetchCorrelationMatrix } from '../api'; // Importa la función
+import { fetchCorrelationMatrix } from '../api';
+import { useTickers } from '../TickersContext';
 
 const Correlacion = () => {
+  const { tickers } = useTickers();
   const [correlationMatrix, setCorrelationMatrix] = useState(null);
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [tickers] = useState(tickersBM);
 
   const today = new Date();
   const defaultEndDate = today.toISOString().split('T')[0];

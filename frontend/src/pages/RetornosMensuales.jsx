@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import BaseLayout from "../components/BaseLayout";
 import HeatmapChart from "../components/HeatmapChart";
-import { tickersBM } from "../constants";
 import { fetchMonthlyReturns } from "../api";
+import { useTickers } from "../TickersContext";
 
 const MonthlyReturnsChart = () => {
+  const { tickers } = useTickers();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicker, setSelectedTicker] = useState("AAPL");
   const [selectedYears, setSelectedYears] = useState(10);
-  const [tickers, setTickers] = useState(tickersBM);
 
   useEffect(() => {
     const fetchData = async () => {

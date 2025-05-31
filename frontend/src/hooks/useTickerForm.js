@@ -1,15 +1,14 @@
 // src/hooks/useTickerForm/useTickerForm.js
 import { useState } from 'react';
-import { tickersBM } from '../constants'; // Asegúrate que la ruta sea correcta
+import { useTickers } from '../TickersContext';
 
 const useTickerForm = () => {
+  const { tickers } = useTickers();
   const today = new Date();
   const defaultEndDate = today.toISOString().split('T')[0];
-  // Creamos una nueva instancia de Date para defaultStartDate para no modificar 'today'
   const oneYearAgo = new Date(new Date().setFullYear(today.getFullYear() - 1));
   const defaultStartDate = oneYearAgo.toISOString().split('T')[0];
 
-  const [tickers] = useState(tickersBM);
   const [ticker, setTicker] = useState("AAPL");
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);

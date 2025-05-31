@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { tickersBM } from '../constants';
 import BaseLayout from "../components/BaseLayout";
+import { useTickers } from "../TickersContext";
 
 const months = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
 
-const availableTickers = tickersBM;
-
 const DividendCalendar = () => {
+  const { tickers } = useTickers();
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [dividendosPorMes, setDividendosPorMes] = useState({});
   const [error, setError] = useState("");
@@ -25,7 +24,7 @@ const DividendCalendar = () => {
   };
 
   const handleAddAllTickers = () => {
-    setSelectedTickers(availableTickers);
+    setSelectedTickers(tickers);
     setNotification("Todos los tickers han sido añadidos.");
   };
 
@@ -56,7 +55,7 @@ const DividendCalendar = () => {
     }
   };
 
-  const tickersDisponibles = availableTickers.filter(ticker => !selectedTickers.includes(ticker));
+  const tickersDisponibles = tickers.filter(ticker => !selectedTickers.includes(ticker));
 
   return (
     <BaseLayout>

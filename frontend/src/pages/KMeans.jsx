@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import Plot from "react-plotly.js";
 import BaseLayout from "../components/BaseLayout";
-import { tickersBM } from "../constants";
 import { obtenerDatosAgrupamiento } from "../api";
+import { useTickers } from "../TickersContext";
 
 const KMeans = () => {
-  const [tickers] = useState(tickersBM);
+  const { tickers } = useTickers();
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [parametrosSeleccionados, setParametrosSeleccionados] = useState([]);
   const [startDate, setStartDate] = useState(new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split("T")[0]);
