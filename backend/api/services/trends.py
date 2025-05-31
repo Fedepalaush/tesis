@@ -56,7 +56,6 @@ def calculate_score(data):
 
 def calculate_triple_ema(data):
     # Calcular las medias móviles
-    print(data)
     data['EMA_4'] = ta.ema(data['close_price'], length=4)
     data['EMA_9'] = ta.ema(data['close_price'], length=9)
     data['EMA_18'] = ta.ema(data['close_price'], length=18)

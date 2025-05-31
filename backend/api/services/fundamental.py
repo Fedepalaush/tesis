@@ -43,9 +43,6 @@ def get_fundamental_data(ticker):
             current_debt = balance.loc['CurrentDebt', balance.columns[0]]
         else:
             current_debt = 0
-
-        print(long_term_debt)
-        print(current_debt)
         
         # Datos fundamentales para incluir en la respuesta
         fundamental_data = {

@@ -26,15 +26,13 @@ function Home() {
     setCantidad,
     handleCreateActivo,
     handleDeleteActivo,
-    totalSum,
-    invActual,
-    diferencia,
+    total_inv,
+    inversion_actual,
+    diferencia_total_pct,
   } = useActivos();
 
-  const { volatilidadData, betaData } = usePortfolioMetrics(activos);
 
-  console.log(volatilidadData)
-  console.log(betaData)
+  const { volatilidadData, betaData } = usePortfolioMetrics(activos);
 
   if (isLoading) {
     return (
@@ -56,11 +54,13 @@ function Home() {
 
         <main className="w-screen pl-10 pr-8 pt-6">
           {/* Tarjetas de resumen */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <CardUsageExample text="Inversión Inicial" number={`$${totalSum.toFixed(2)}`} />
-            <CardUsageExample text="Inversión Actual" number={`$${invActual.toFixed(2)}`} />
-            <CardUsageExample text="Diferencia" number={`${diferencia.toFixed(2)}%`} />
+            <CardUsageExample text="Inversión Inicial" number={`$${total_inv.toFixed(2)}`} />
+            <CardUsageExample text="Inversión Actual" number={`$${inversion_actual.toFixed(2)}`} />
+            <CardUsageExample text="Diferencia" number={`${diferencia_total_pct.toFixed(2)}%`} />
           </div>
+        
 
           {/* Tabla y Modal */}
           <section className="mt-6 max-w-7xl mx-auto">
@@ -81,25 +81,17 @@ function Home() {
             )}
           </section>
 
-              {/* Gráficos */}
-      <section className="mt-6 max-w-7xl flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/2">
-          <DonutChart data={activos} />
-        </div>
-        <div className="md:w-1/2 flex flex-col gap-4">
-          {volatilidadData && volatilidadData.length > 0 && betaData && betaData.length > 0 ? (
-            <>
-              <VolatilidadYBetaGrafico title="Volatilidad" data={volatilidadData} strokeColor="#8884d8" />
-              <VolatilidadYBetaGrafico title="Beta" data={betaData} strokeColor="#82ca9d" />
-            </>
-          ) : (
-            <div className="text-center text-gray-500 dark:text-gray-400">
-              Cargando datos de Volatilidad y Beta...
+          {/* Gráficos */}
+          <section className="mt-6 max-w-7xl flex flex-col md:flex-row gap-6">
+        
+            <div className="md:w-1/2">
+              <DonutChart data={activos} />
             </div>
-          )}
-        </div>
-      </section>
-
+            <div className="md:w-1/2 flex flex-col gap-4">
+              <VolatilidadYBetaGrafico title="Volatilidad" data={activos.length > 0 ? volatilidadData : []} strokeColor="#8884d8" />
+              <VolatilidadYBetaGrafico title="Beta" data={activos.length > 0 ? betaData : []} strokeColor="#82ca9d" />
+            </div>
+          </section>
         </main>
       </div>
     </div>

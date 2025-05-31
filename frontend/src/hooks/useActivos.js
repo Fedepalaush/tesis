@@ -3,9 +3,9 @@ import { getActivos, deleteActivo, createActivo } from "../api";
 
 const useActivos = () => {
   const [activos, setActivos] = useState([]);
-  const [totalSum, setTotalSum] = useState(0);
-  const [invActual, setInvActual] = useState(0);
-  const [diferencia, setDiferencia] = useState(0);
+  const [total_inv, setTotalSum] = useState(0);
+  const [inversion_actual, setInvActual] = useState(0);
+  const [diferencia_total_pct, setDiferencia] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Estado del modal de compra
@@ -21,9 +21,9 @@ const useActivos = () => {
       console.log('soy data')
       console.log(data)
       setActivos(data.activos || []);
-      setTotalSum(data.total_invertido || 0);
-      setInvActual(data.invActual || 0);
-      setDiferencia(data.diferencia_total || 0);
+      setTotalSum(data.total_inv || 0);
+      setInvActual(data.inversion_actual || 0);
+      setDiferencia(data.diferencia_total_pct || 0);
     } catch (error) {
       console.error("Error al cargar los activos:", error);
       setActivos([]);
@@ -65,9 +65,10 @@ const useActivos = () => {
       return false;
     }
   };
-
-  const handleOpenCompra = () => {
+  
+  const handleOpenCompra = (open, ticker = "") => {
     setOpenCompra(true);
+    setTickerToBuy(ticker)
   };
 
   const handleCloseCompra = () => {
@@ -84,9 +85,9 @@ const useActivos = () => {
   return {
     activos,
     isLoading: loading,
-    totalSum,
-    invActual,
-    diferencia,
+    total_inv: total_inv,
+    inversion_actual: inversion_actual,
+    diferencia_total_pct: diferencia_total_pct,
     openCompra,
     tickerToBuy,
     precioCompra,

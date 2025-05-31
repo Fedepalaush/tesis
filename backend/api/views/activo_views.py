@@ -146,14 +146,24 @@ class ActivoListCreateView(generics.ListCreateAPIView):
                 })
 
         # Totales generales
-        total_invertido = sum(ticker['total_inversion'] for ticker in tickers)
-        diferencia_total = sum(ticker['ganancia'] for ticker in tickers)
+        total_invertido = sum(float(ticker.get('total_inversion', 0)) for ticker in tickers)
+        total_ganancia = sum(float(ticker.get('ganancia', 0)) for ticker in tickers)
+
+        # Calcular diferencia en porcentaje, evitando división por cero
+        if total_invertido > 0:
+            diferencia_total_pct = (total_ganancia / total_invertido) * 100
+        else:
+            diferencia_total_pct = 0
+        diferencia_total = (total_ganancia / total_invertido) * 100,
+
 
         return Response({
             "activos": tickers,
-            "total_invertido": total_invertido,
-            "diferencia_total": diferencia_total,
-
+            "total_inv": round(total_invertido, 2),
+            "inversion_actual": round(total_invertido + total_ganancia, 2),
+            
+            "diferencia_total": round(total_ganancia, 2),
+            "diferencia_total_pct": round(diferencia_total_pct, 2),
         })
 
     def perform_create(self, serializer) -> None:

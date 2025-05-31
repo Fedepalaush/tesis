@@ -39,19 +39,7 @@ function App() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [selectedParametro, setSelectedParametro] = useState("BA"); // Default value
   const [selectedTimeframe, setSelectedTimeframe] = useState("1d"); // Default value
-
-  // Eliminado: useEffect que llamaba a /my_custom_view/
-
-  // Handler function for dropdown change
-  /*   const handleParametroChange = (event) => {
-    setSelectedParametro(event.target.value);
-  };
-
-  // Handler function for timeframe dropdown change
-  const handleTimeframeChange = (event) => {
-    setSelectedTimeframe(event.target.value);
-  }; */
-
+  
   return (
     <div className="">
 
@@ -81,39 +69,6 @@ function App() {
         <Route path="/entrenamientoPage" element={<EntrenamientoPage/>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {/*       <div>
-        <div className="w-full">
-          <NavbarComp />
-        </div>
-        <body className="dark:bg-black">
-          <div className="flex w-full">
-            <aside class="h-screen sticky top-0">
-              <Sidebar className="sticky left-0 top-0">
-                <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" alert />
-                <SidebarItem icon={<BarChart3 size={20} />} text="Estadisticas" active />
-                <SidebarItem icon={<UserCircle size={20} />} text="Usuarios" />
-                <SidebarItem icon={<Boxes size={20} />} text="Inventario" />
-                <SidebarItem icon={<Package size={20} />} text="Ordenes" />
-                <SidebarItem icon={<Receipt size={20} />} text="Facturacion" />
-                <SidebarItem icon={<Settings size={20} />} text="Ajustes" />
-                <SidebarItem icon={<LifeBuoy size={20} />} text="Ayuda" />
-              </Sidebar>
-            </aside>
-            <div className="w-screen pl-10">
-              <div className=" grid grid-col-1 mt-4 lg:grid-cols-3 md:grid-cols-2 gap-3  h-max-full">
-                <CardUsageExample text="Inversion Inicial" number="$34,743" />
-                <CardUsageExample text="Inversion Actual" number="$38,264" />
-                <CardUsageExample text="Diferencia" number="1,74 %" />
-              </div>
-              <div className="w-full mt-6 mx-auto px-14">
-                <TableUsageExample />
-              </div>
-              <div className="mt-4">
-              </div>
-            </div>
-          </div>
-        </body>
-      </div> */}
     </BrowserRouter>
     </div>
   );

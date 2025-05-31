@@ -2,11 +2,6 @@ import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { Button, TextField, MenuItem } from "@mui/material";
 
-const tickers = [
-  "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
-  "NVDA", "META", "JPM", "V", "JNJ"
-];
-
 function ModalCompra({
   open,
   onClose,
@@ -16,7 +11,8 @@ function ModalCompra({
   precioCompra,
   setPrecioCompra,
   cantidad,
-  setCantidad
+  setCantidad,
+  tickers
 }) {
   const handleSubmit = (e) => {
     e.preventDefault();
