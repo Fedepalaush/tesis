@@ -7,7 +7,7 @@ import axios from 'axios'
 import { setTickersBM } from './constants.js'
 
 const client = new ApolloClient({
-  uri: "http://localhost:8000/graphql",
+  uri: "api/graphql",
   cache: new InMemoryCache()
 });
 

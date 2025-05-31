@@ -80,7 +80,7 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
 
 // Función para obtener los datos del activo
 export const fetchActivoAnalysis = (ticker, startDate, endDate) => {
-  return api.get("/activo/", {
+  return api.get("api/activo/", {
     params: { ticker, start_date: startDate, end_date: endDate },
   });
 };
