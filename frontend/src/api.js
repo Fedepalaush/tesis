@@ -105,6 +105,7 @@ export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => 
         },
       });
       const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+      console.log(responseData)
       return responseData;
     } catch (error) {
       console.error("Error fetching EMA signals:", error);

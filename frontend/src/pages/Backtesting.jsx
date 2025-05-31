@@ -76,18 +76,21 @@ function Backtest() {
     }
   };
 
+
+  
   const runBacktestHandler = async () => {
     setIsLoading(true);
     try {
       const response = await runBacktest(formData);
-      console.log(response.data);
-      if (response.data && response.data.Trades) {
-        setResult(response.data.Trades);
-        setTotal(response.data);
+      const datos = response.data?.data;
+
+      if (datos?.Trades) {
+        setResult(datos.Trades);
+        setTotal(datos);
       } else {
         console.error("La respuesta no contiene datos de trades.");
         setResult([]);
-      }
+}
     } catch (error) {
       console.error("Error running backtest:", error);
       setResult([]);

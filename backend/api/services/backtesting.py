@@ -4,10 +4,12 @@ from datetime import datetime
 from ..models import StockData
 from .estrategias.custom_strategy import CustomStrategy
 from backtesting import Backtest
+import traceback
+
 
 def run_backtest_service(data):
     """
-    Lógica para ejecutar el backtest.
+    Lógica para ejecutar el backtest con debugging extendido para encontrar errores.
     """
 
     # Validación de datos de entrada
@@ -38,16 +40,32 @@ def run_backtest_service(data):
         ticker=ticker,
         date__range=[inicio, fin]
     ).order_by('date')
+
     if not queryset.exists():
         return {'error': 'No data found for the given ticker and date range.'}
 
     # Convertir los resultados del queryset a un DataFrame de pandas
-    data = pd.DataFrame.from_records(queryset.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
-    
+    data_df = pd.DataFrame.from_records(queryset.values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'))
+
     # Convertir la columna 'date' a datetime
-    data['date'] = pd.to_datetime(data['date'], errors='coerce')
-    data.set_index('date', inplace=True)  # Establecer la fecha como índice
-    data.columns = ['Open', 'High', 'Low', 'Close', 'Volume']  # Ajustar los nombres de las columnas
+    data_df['date'] = pd.to_datetime(data_df['date'], errors='coerce')
+
+    # Verificar si hay fechas NaT
+    if data_df['date'].isna().any():
+        return {'error': 'Invalid dates found in the data.'}
+
+    data_df.set_index('date', inplace=True)  # Establecer la fecha como índice
+
+    # Renombrar columnas para backtesting.py
+    data_df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+    # Suponiendo que df es tu DataFrame original
+    for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
+        data_df[col] = data_df[col].astype(float)
+
+
+    # Verificar que no haya NaNs en columnas importantes
+    if data_df.isna().sum().sum() > 0:
+        return {'error': 'Missing values found in the data.'}
 
     # Configurar estrategia personalizada
     CustomStrategy.rapida = rapida
@@ -57,9 +75,13 @@ def run_backtest_service(data):
     CustomStrategy.use_sma_cross = strategies.get('smaCross', False)
     CustomStrategy.use_rsi = strategies.get('rsi', False)
     CustomStrategy.rsi_params = strategies.get('rsiParams', {'overboughtLevel': 70, 'oversoldLevel': 30})
-    # Ejecutar el backtest
-    bt = Backtest(data, CustomStrategy, cash=int(initial_cash))
-    stats = bt.run()
+
+    try:
+        bt = Backtest(data_df, CustomStrategy, cash=int(initial_cash))
+        stats = bt.run()
+    except Exception as e:
+        tb = traceback.format_exc()
+        return {'error': 'Backtest execution error', 'traceback': tb}
 
     # Convertir estadísticas adicionales en un diccionario
     stats_dict = {

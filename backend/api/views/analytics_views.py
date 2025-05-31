@@ -222,10 +222,10 @@ class BacktestView(CachedAPIView):
         """
         try:
             data = request.data
-
+            print('Por hacer el run')
             # Call service to run backtest
             result = run_backtest_service(data)
-
+            print(result)
             # Check if an error occurred
             if 'error' in result:
                 return self.error_response(result['error'], status.HTTP_400_BAD_REQUEST)
