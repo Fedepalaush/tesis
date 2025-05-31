@@ -94,6 +94,7 @@ class TickersView(CachedAPIView):
             
         # Si no está en caché, obtener tickers
         tickers = obtener_tickers_cedears()
+        print(tickers)
         
         # Almacenar en caché y devolver respuesta
         return self.cache_response(cache_key, {"tickers": tickers}, timeout=self.cache_timeout)
