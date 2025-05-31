@@ -44,7 +44,7 @@ const DividendCalendar = () => {
       const params = new URLSearchParams();
       selectedTickers.forEach((ticker) => params.append("tickers", ticker));
 
-      const response = await api.get("/obtener_dividendos/", { params });
+      const response = await api.get("/dividendos/", { params });
 
       setDividendosPorMes(response.data.dividendos);
       setError("");

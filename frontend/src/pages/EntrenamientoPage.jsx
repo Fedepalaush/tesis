@@ -10,6 +10,8 @@ import MatrizConfusion from "../components/MatrizConfusion";
 export default function EntrenamientoPage() {
   const { resultado, loading, entrenarModelo } = useEntrenamiento();
 
+  const datos = resultado?.data;
+
   const getColorClasses = (prediccion) =>
     clsx("p-4 border rounded", {
       "bg-green-100 border-green-300 text-green-800": prediccion === "Subirá",
@@ -39,29 +41,30 @@ export default function EntrenamientoPage() {
           </div>
         )}
 
-        {resultado && !resultado.error && (
+        {datos && (
           <div className="mt-6">
-            {resultado.prediccion && (
-              <div className={getColorClasses(resultado.prediccion)}>
+            {datos.prediccion && (
+              <div className={getColorClasses(datos.prediccion)}>
                 <p className="font-medium">
                   Tendencia esperada en el{" "}
-                  {resultado.dias_prediccion === 1
+                  {datos.dias_prediccion === 1
                     ? "próximo 1 día"
-                    : `próximos ${resultado.dias_prediccion} días`}
-                  : <strong>{resultado.prediccion}</strong>
+                    : `próximos ${datos.dias_prediccion} días`}
+                  : <strong>{datos.prediccion}</strong>
                 </p>
               </div>
             )}
-            <IndicadoresModelo resultados={resultado} />
+            <IndicadoresModelo resultados={datos} />
           </div>
         )}
 
-        {resultado && !resultado.error && resultado.confusion_matrix && (
+        {datos?.confusion_matrix && (
           <div className="mt-6">
-            <MatrizConfusion matriz={resultado.confusion_matrix} />
+            <MatrizConfusion matriz={datos.confusion_matrix} />
           </div>
         )}
       </div>
     </BaseLayout>
   );
 }
+

@@ -37,6 +37,7 @@ const SharpePlot = () => {
     setLoading(true); // Indicar que la carga está en progreso
     try {
       const data = await fetchSharpeRatioData(sector, xYears, yYears);
+      console.log(data)
       setSharpeData(data);
     } catch (error) {
       console.error("Error al obtener datos del Sharpe Ratio:", error);

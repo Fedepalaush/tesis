@@ -5,6 +5,7 @@ from .trends import check_ema_trend, calculate_triple_ema, calculate_score
 from .signals import calculate_signal
 import pandas_ta as ta
 from api.models import StockData
+from django.utils.timezone import make_aware
 from django.core.cache import cache
 
 def calculate_sma(data, period):
@@ -93,16 +94,20 @@ def calculate_sharpe_ratio(sector, x_years, y_years):
     """
     Calcula el ratio de Sharpe para un sector durante x_years e y_years.
     """
-    # Generar una clave única para el caché
-    cache_key = f"sharpe_ratio_{sector}_{x_years}_{y_years}"
+
+    # Sanitizar sector para evitar problemas con el cache_key
+    safe_sector = sector.replace(" ", "_").replace(".", "-")
+    cache_key = f"sharpe_ratio_{safe_sector}_{x_years}_{y_years}"
     sharpe_data = cache.get(cache_key)
 
     if sharpe_data:
         return sharpe_data
 
-    # Obtener tickers
+    # Obtener tickers según el sector
     if sector.lower() == 'todos':
-        sector_tickers = list(StockData.objects.values_list('ticker', flat=True).distinct())
+        sector_tickers = list(
+            StockData.objects.values_list('ticker', flat=True).distinct()
+        )
     else:
         tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0][
             ['Symbol', 'GICS Sector', 'GICS Sub-Industry']
@@ -113,23 +118,36 @@ def calculate_sharpe_ratio(sector, x_years, y_years):
     if not sector_tickers:
         return {'error': 'Invalid sector or no tickers found'}
 
-    # Consultar precios desde la base de datos
+    # Rango de fechas (podés ajustar si querés usar fechas dinámicas)
     start = '2015-01-01'
     end = '2023-07-01'
+
     stock_prices = StockData.objects.filter(
         ticker__in=sector_tickers + ['^GSPC'],
         date__range=[start, end]
     ).values('ticker', 'date', 'close_price')
 
     df = pd.DataFrame(stock_prices)
+
     if df.empty:
         return {'error': 'No data found for the provided tickers'}
 
-    sp500_fin = df.pivot(index='date', columns='ticker', values='close_price').dropna(axis=1)
-    returns = sp500_fin.pct_change()[1:]
+    # Asegurarse de que las fechas sean aware
+    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = df['date'].apply(make_aware)
 
-    sharpe_x_years = (returns.iloc[-252 * x_years:].mean() / returns.iloc[-252 * x_years:].std())
-    sharpe_y_years = (returns.iloc[-252 * y_years:].mean() / returns.iloc[-252 * y_years:].std())
+    # Pivotear y calcular retornos
+    df_pivot = df.pivot(index='date', columns='ticker', values='close_price').dropna(axis=1)
+    returns = df_pivot.pct_change().dropna()
+
+    # Convertir retornos a float para evitar errores con Decimal
+    returns = returns.astype(float)
+
+    try:
+        sharpe_x_years = returns.iloc[-252 * x_years:].mean() / returns.iloc[-252 * x_years:].std()
+        sharpe_y_years = returns.iloc[-252 * y_years:].mean() / returns.iloc[-252 * y_years:].std()
+    except Exception as e:
+        return {'error': str(e)}
 
     sharpe_df = pd.DataFrame({
         f'Sharpe {x_years}Y': sharpe_x_years,
@@ -138,7 +156,7 @@ def calculate_sharpe_ratio(sector, x_years, y_years):
 
     sharpe_data = sharpe_df.reset_index().rename(columns={'index': 'ticker'}).to_dict(orient='records')
 
-    # Guardar en caché los resultados
-    cache.set(cache_key, sharpe_data, timeout=3600)  # Cache por 1 hora
+    # Cachear resultados por 1 hora
+    cache.set(cache_key, sharpe_data, timeout=3600)
 
     return sharpe_data

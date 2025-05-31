@@ -10,8 +10,9 @@ export const useEntrenamiento = () => {
     setLoading(true);
     setResultado(null);
     try {
-      const { data } = await api.post("/entrenar/", formData);
+      const { data } = await api.post("/entrenar-modelo/", formData);
       setResultado(data);
+      console.log(data)
     } catch (error) {
       console.error(error);
       const mensaje = error.response?.data?.detail || "Hubo un problema al entrenar el modelo.";

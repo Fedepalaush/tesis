@@ -26,10 +26,11 @@ export default api
 
 export const fetchPivotPoints = async (ticker) => {
     try {
-      const response = await api.get("/api/get_pivot_points/", {
+      const response = await api.get("/pivot-points/", {
         params: { ticker },
       });
-      return response.data;
+      console.log(response)
+      return response.data.data;
     } catch (error) {
       console.error("Error fetching data:", error);
       throw error;
@@ -40,7 +41,7 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
   const tickersQueryString = selectedTickers.map((ticker) => `tickers=${ticker}`).join('&');
   try {
     const response = await api.get(
-      `/api/get_correlation_matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`
+      `/correlation-matrix?${tickersQueryString}&start_date=${startDate}&end_date=${endDate}`
     );
     return response.data;
   } catch (error) {
@@ -50,22 +51,29 @@ export const fetchCorrelationMatrix = async (selectedTickers, startDate, endDate
 };
 
 export const fetchSharpeRatioData = async (sector, xYears, yYears) => {
-    try {
-      const response = await api.get(
-        `/api/sharpe-ratio/`,
-        { params: { sector, x_years: xYears, y_years: yYears } }
-      );
-      return response.data.sharpe_data;
-    } catch (error) {
-      console.error("Error al obtener los datos del Sharpe Ratio:", error);
-      throw error;
+  try {
+    const response = await api.get("/sharpe-ratio/", {
+      params: { sector, x_years: xYears, y_years: yYears },
+    });
+
+    const sharpeData = response?.data?.data?.sharpe_data;
+
+    if (!sharpeData) {
+      throw new Error("No se encontró 'sharpe_data' en la respuesta");
     }
+
+    return sharpeData;
+  } catch (error) {
+    console.error("Error al obtener los datos del Sharpe Ratio:", error);
+    throw error;
+  }
 };
+
 
 export const fetchMonthlyReturns = async (ticker, years) => {
     try {
       const response = await api.get(
-        `/api/get_retornos_mensuales`,
+        `/retornos-mensuales`,
         { params: { ticker, years } }
       );
       return response.data;
@@ -76,18 +84,18 @@ export const fetchMonthlyReturns = async (ticker, years) => {
 };
 
 export const fetchActivoAnalysis = (ticker, startDate, endDate) => {
-  return api.get("/api/activo/", {
+  return api.get("/activo/", {
     params: { ticker, start_date: startDate, end_date: endDate },
   });
 };
 
 export const runBacktest = (formData) => {
-  return api.post("/api/run_backtest/", formData);
+  return api.post("/backtest/", formData);
 };
 
 export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => {
     try {
-      const response = await api.get("/api/get_ema_signals/", {
+      const response = await api.get("/ema-signals/", {
         params: {
           tickers,
           ema4,
@@ -105,7 +113,7 @@ export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => 
 };
 
 export const obtenerDatosAgrupamiento = async (tickers, parametros, startDate, endDate) => {
-  const response = await api.get(`/api/agrupamiento/`, {
+  const response = await api.get(`/agrupamiento/`, {
     params: {
       tickers: tickers.join(","),
       parametros: parametros.join(","),
@@ -118,7 +126,7 @@ export const obtenerDatosAgrupamiento = async (tickers, parametros, startDate, e
 
 export const fetchFundamentalData = async (ticker) => {
   try {
-    const response = await api.get("/api/fundamental/", {
+    const response = await api.get("/fundamental/", {
       params: { ticker },
     });
     return response.data;
@@ -129,17 +137,17 @@ export const fetchFundamentalData = async (ticker) => {
 };
 
 export const getActivos = async () => {
-  const response = await api.get("/api/activos/");
+  const response = await api.get("/activos/");
   return response.data;
 };
 
 export const deleteActivo = async (id) => {
-  const response = await api.delete(`/api/activos/delete/${id}/`);
+  const response = await api.delete(`/activos/delete/${id}/`);
   return response.status;
 };
 
 export const createActivo = async (ticker, precioCompra, cantidad) => {
-  const response = await api.post("/api/activos/", {
+  const response = await api.post("/activos/", {
     ticker,
     precioCompra,
     cantidad,
@@ -149,7 +157,7 @@ export const createActivo = async (ticker, precioCompra, cantidad) => {
 
 export const getPortfolioMetrics = async (activos, indice = "^GSPC") => {
   try {
-    const response = await api.post("/api/portfolio-metrics/", {
+    const response = await api.post("/portfolio-metrics/", {
       activos,
       indice_referencia: indice,
     });
@@ -162,7 +170,7 @@ export const getPortfolioMetrics = async (activos, indice = "^GSPC") => {
 
 export const fetchTickers = async () => {
   try {
-    const response = await api.get("/api/tickers/");
+    const response = await api.get("/tickers/");
     return response.data;
   } catch (error) {
     console.error("Error fetching tickers:", error);

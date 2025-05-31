@@ -560,3 +560,4 @@ class PortfolioMetricsView(CachedAPIView):
         except Exception as e:
             print("❌ Error al calcular métricas móviles:", str(e))
             return self.error_response("No se pudo calcular las métricas", status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
