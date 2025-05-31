@@ -93,24 +93,25 @@ export const runBacktest = (formData) => {
   return api.post("/backtest/", formData);
 };
 
-export const fetchEMASignals = async (tickers, ema4, ema9, ema18, useTriple) => {
-    try {
-      const response = await api.get("/ema-signals/", {
-        params: {
-          tickers,
-          ema4,
-          ema9,
-          ema18: useTriple ? ema18 : undefined,
-          useTriple,
-        },
-      });
-      const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-      console.log(responseData)
-      return responseData;
-    } catch (error) {
-      console.error("Error fetching EMA signals:", error);
-      throw error;
-    }
+export const fetchEMASignals = async (ema4, ema9, ema18, useTriple) => {
+  try {
+    const tickers = ["AAPL", "TSLA", "MSFT"];  // solo estos 3
+    const response = await api.get("/ema-signals/", {
+      params: {
+        tickers,
+        ema4,
+        ema9,
+        ema18: useTriple ? ema18 : undefined,
+        useTriple,
+      },
+    });
+    const responseData = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+    console.log(responseData);
+    return responseData;
+  } catch (error) {
+    console.error("Error fetching EMA signals:", error);
+    throw error;
+  }
 };
 
 export const obtenerDatosAgrupamiento = async (tickers, parametros, startDate, endDate) => {

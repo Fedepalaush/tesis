@@ -329,7 +329,7 @@ class EMASignalsView(CachedAPIView):
             Response: The HTTP response object with EMA signals.
         """
         # Get tickers and EMA periods from request
-        tickers = request.GET.getlist('tickers[]')
+        tickers = ['AAPL', 'TSLA', 'MSFT']
         ema4 = int(request.GET.get('ema4', 4))
         ema9 = int(request.GET.get('ema9', 9))
         ema18 = int(request.GET.get('ema18', 18))
