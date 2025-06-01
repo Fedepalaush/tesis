@@ -220,3 +220,95 @@ La refactorización se basa en principios de diseño orientado a objetos y patro
 #### Referencias académicas:
 - Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). **Design Patterns: Elements of Reusable Object-Oriented Software**. Addison-Wesley.
 - Fowler, M. (2002). **Patterns of Enterprise Application Architecture**. Addison-Wesley.
+
+---
+
+## Fecha: 31 de Mayo de 2025
+
+### Implementación de pruebas unitarias para servicios
+
+Se implementaron pruebas unitarias para los servicios en el directorio `services` siguiendo buenas prácticas de ingeniería de software. Este proceso incluyó:
+
+1. **Uso de mocks**:
+   - Se utilizaron mocks de Django (`cache`) y librerías externas (`yfinance`) para simular comportamientos y evitar dependencias externas.
+   - Esto garantiza que las pruebas sean rápidas y confiables.
+
+2. **Pruebas para el servicio `fundamental`**:
+   - Se crearon pruebas en `tests/test_services.py` para validar:
+     - Comportamiento cuando los datos están en caché.
+     - Comportamiento cuando los datos no están en caché y se obtienen de `yfinance`.
+
+3. **Ejecución de pruebas**:
+   - Las pruebas se pueden ejecutar utilizando el siguiente comando de Django:
+     ```bash
+     python manage.py test backend.tests.test_services
+     ```
+
+#### Justificación académica:
+Las pruebas unitarias son fundamentales para garantizar la calidad del software. El uso de mocks permite:
+- **Aislamiento**: Probar cada componente de forma independiente.
+- **Velocidad**: Reducir el tiempo de ejecución de las pruebas.
+- **Confiabilidad**: Evitar dependencias externas que puedan fallar.
+
+#### Próximos pasos:
+1. Implementar pruebas para otros servicios en el directorio `services`.
+2. Documentar métricas de cobertura y resultados de las pruebas.
+3. Optimizar los servicios según los resultados de las pruebas.
+
+#### Referencias académicas:
+- Meszaros, G. (2007). **xUnit Test Patterns: Refactoring Test Code**. Addison-Wesley.
+- Fowler, M. (2002). **Patterns of Enterprise Application Architecture**. Addison-Wesley.
+
+---
+
+## Fecha: 31 de Mayo de 2025
+
+### Implementación de pruebas unitarias completas en el backend
+
+Se desarrollaron pruebas unitarias para cubrir todos los componentes críticos del backend, incluyendo servicios, modelos, vistas y utilidades. Este proceso se realizó siguiendo buenas prácticas de ingeniería de software y se documentó en detalle.
+
+#### **1. Pruebas para servicios**
+- **Archivo:** `tests/test_services.py`
+- **Descripción:**
+  - Validación del servicio `fundamental`.
+  - Uso de mocks para simular comportamientos de caché y librerías externas como `yfinance`.
+  - Pruebas para escenarios con datos en caché y sin datos en caché.
+
+#### **2. Pruebas para modelos**
+- **Archivo:** `tests/test_models.py`
+- **Descripción:**
+  - Validación de la creación de objetos en el modelo `Activo`.
+  - Simulación de filtrado de objetos utilizando métodos de Django ORM.
+
+#### **3. Pruebas para vistas**
+- **Archivo:** `tests/test_views.py`
+- **Descripción:**
+  - Validación de la respuesta del endpoint de salud (`/api/health/`).
+  - Validación de la respuesta del endpoint de activos (`/api/activo/`).
+
+#### **4. Pruebas para utilidades**
+- **Archivo:** `tests/test_utils.py`
+- **Descripción:**
+  - Validación de funciones utilitarias con entradas válidas e inválidas.
+
+#### **5. Ejecución de pruebas**
+- Las pruebas se pueden ejecutar utilizando el siguiente comando:
+  ```bash
+  python manage.py test
+  ```
+
+#### **Justificación académica**
+Las pruebas unitarias son esenciales para garantizar la calidad del software. Este enfoque permite:
+- **Cobertura completa:** Validar todos los componentes críticos del backend.
+- **Detección temprana de errores:** Identificar problemas antes de la integración.
+- **Mantenibilidad:** Facilitar la evolución del código sin introducir regresiones.
+
+#### **Próximos pasos**
+1. Ampliar las pruebas para cubrir casos extremos y de rendimiento.
+2. Documentar métricas de cobertura y resultados de las pruebas.
+3. Optimizar el código según los resultados obtenidos.
+
+#### **Referencias académicas**
+- Meszaros, G. (2007). **xUnit Test Patterns: Refactoring Test Code**. Addison-Wesley.
+- Fowler, M. (2002). **Patterns of Enterprise Application Architecture**. Addison-Wesley.
+- Beck, K. (2002). **Test-Driven Development: By Example**. Addison-Wesley.
