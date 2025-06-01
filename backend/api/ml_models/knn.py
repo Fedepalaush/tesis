@@ -1,10 +1,12 @@
+from .base import BaseModel
 from sklearn.neighbors import KNeighborsClassifier
-from .base import preparar_datos, evaluar_modelo
 
-def entrenar_knn(df, indicador):
-    X_train, X_test, y_train, y_test = preparar_datos(df, indicador)
+class KNNModel(BaseModel):
+    def train(self, df, indicador):
+        X_train, X_test, y_train, y_test = self.preparar_datos(df, indicador)
+        self.model = KNeighborsClassifier()
+        self.model.fit(X_train, y_train)
+        return self.evaluar_modelo(self.model, X_test, y_test)
 
-    model = KNeighborsClassifier()
-    model.fit(X_train, y_train)
-
-    return evaluar_modelo(model, X_test, y_test)
+    def predict(self, X):
+        return self.model.predict(X)

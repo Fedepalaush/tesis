@@ -134,3 +134,89 @@ sudo docker compose exec backend python manage.py migrate api 0001 --fake
 sudo docker compose exec backend python manage.py migrate api --fake-initial
 sudo docker compose restart backend
 ```
+
+---
+
+## Fecha: 31 de Mayo de 2025
+
+### Refactorización de modelos de machine learning
+
+Se realizó una refactorización completa de los modelos de machine learning en el directorio `ml_models` para mejorar la mantenibilidad y la reutilización del código. Este proceso incluyó:
+
+1. **Creación de la clase base `BaseModel`**:
+   - Implementada en `ml_models/base.py`.
+   - Proporciona métodos comunes para la preparación de datos (`preparar_datos`) y la evaluación de modelos (`evaluar_modelo`).
+   - Define métodos abstractos (`train` y `predict`) que deben ser implementados por cada modelo específico.
+
+2. **Adaptación de modelos existentes**:
+   - Los modelos `KNN`, `Logistic Regression`, `LSTM`, `Random Forest`, `SVM` y `XGBoost` fueron refactorizados para heredar de `BaseModel`.
+   - Cada modelo implementa los métodos `train` y `predict` según sus características específicas.
+
+3. **Actualización de dependencias**:
+   - Se agregaron las siguientes librerías al archivo `requirements.txt`:
+     - `scikit-learn==1.2.2`: Biblioteca para algoritmos de machine learning.
+     - `tensorflow==2.12.0`: Framework para redes neuronales y deep learning.
+     - `numpy==1.24.3`: Biblioteca para operaciones numéricas y manipulación de matrices.
+
+#### Justificación académica:
+La refactorización se realizó siguiendo principios de diseño orientado a objetos y patrones de diseño como el Template Method. Esto permite:
+
+- **Reutilización de código**: Los métodos comunes se centralizan en la clase base, reduciendo la duplicación.
+- **Extensibilidad**: Nuevos modelos pueden ser añadidos fácilmente implementando los métodos abstractos.
+- **Mantenibilidad**: La estructura modular facilita la comprensión y el mantenimiento del código.
+
+#### Próximos pasos:
+1. **Reconstruir el contenedor Docker**:
+   Ejecutar el siguiente comando para instalar las dependencias actualizadas:
+   ```bash
+   sudo docker compose up --build
+   ```
+2. **Validar funcionalidad**:
+   - Probar cada modelo refactorizado para garantizar su correcto funcionamiento.
+   - Verificar que los endpoints de API que utilizan estos modelos operen sin errores.
+3. **Documentar resultados**:
+   - Registrar métricas de rendimiento y precisión de cada modelo.
+   - Comparar con la implementación previa para evaluar mejoras.
+
+#### Referencias académicas:
+- Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). **Design Patterns: Elements of Reusable Object-Oriented Software**. Addison-Wesley.
+- Chollet, F. (2018). **Deep Learning with Python**. Manning Publications.
+- Pedregosa, F., et al. (2011). **Scikit-learn: Machine Learning in Python**. Journal of Machine Learning Research, 12, 2825-2830.
+
+---
+
+## Fecha: 31 de Mayo de 2025
+
+### Refactorización del directorio `services` de `api`
+
+Se inició la refactorización del directorio `services` para mejorar la mantenibilidad y la reutilización del código. Este proceso incluyó:
+
+1. **Creación de la clase base `BaseService`**:
+   - Implementada en `services/base.py`.
+   - Proporciona métodos comunes para:
+     - Manejo de caché (`get_cached_data`, `set_cached_data`).
+     - Manejo de excepciones (`handle_exception`).
+   - Define el método abstracto `execute` que debe ser implementado por cada servicio derivado.
+
+2. **Plan de refactorización**:
+   - Refactorizar servicios existentes (`fundamental.py`, `activo_service.py`, etc.) para heredar de `BaseService`.
+   - Modularizar funciones reutilizables en `services/utils.py`.
+   - Implementar el patrón Strategy para lógica específica en una carpeta `strategies`.
+   - Crear un `ServiceFactory` en `services/factory.py` para instanciar servicios dinámicamente.
+
+#### Justificación académica:
+La refactorización se basa en principios de diseño orientado a objetos y patrones de diseño reconocidos:
+- **Strategy**: Facilita la extensión de lógica específica sin modificar el código existente.
+- **Factory**: Simplifica la creación de servicios dinámicos.
+- **Modularización**: Mejora la reutilización y la mantenibilidad del código.
+
+#### Próximos pasos:
+1. Refactorizar servicios existentes para heredar de `BaseService`.
+2. Implementar estrategias específicas en la carpeta `strategies`.
+3. Crear el `ServiceFactory`.
+4. Escribir pruebas unitarias.
+5. Documentar resultados en `README.md` y `dev.md`.
+
+#### Referencias académicas:
+- Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). **Design Patterns: Elements of Reusable Object-Oriented Software**. Addison-Wesley.
+- Fowler, M. (2002). **Patterns of Enterprise Application Architecture**. Addison-Wesley.

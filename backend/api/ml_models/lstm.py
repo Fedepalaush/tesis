@@ -1,43 +1,39 @@
-import numpy as np
-import pandas as pd
+from .base import BaseModel
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
-from sklearn.metrics import accuracy_score, mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
-def entrenar_lstm(df, indicador):
-    df = df.dropna().copy()
-    df['Target'] = df['Close'].shift(-1) > df['Close']  # simple binary prediction
-    df.dropna(inplace=True)
+class LSTMModel(BaseModel):
+    def train(self, df, indicador):
+        df = df.dropna().copy()
+        df['Target'] = df['Close'].shift(-1) > df['Close']
+        df.dropna(inplace=True)
 
-    scaler = MinMaxScaler()
-    features = scaler.fit_transform(df[[indicador]])
+        scaler = MinMaxScaler()
+        features = scaler.fit_transform(df[[indicador]])
 
-    X = []
-    y = df['Target'].astype(int).values
-    for i in range(10, len(features)):
-        X.append(features[i-10:i])
+        X = []
+        y = df['Target'].astype(int).values
+        for i in range(10, len(features)):
+            X.append(features[i-10:i])
 
-    X = np.array(X)
-    y = y[10:]
+        X = np.array(X)
+        y = y[10:]
 
-    X_train, X_test = X[:-100], X[-100:]
-    y_train, y_test = y[:-100], y[-100:]
+        X_train, X_test = X[:-100], X[-100:]
+        y_train, y_test = y[:-100], y[-100:]
 
-    model = Sequential()
-    model.add(LSTM(50, return_sequences=False, input_shape=(X.shape[1], X.shape[2])))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    history = model.fit(X_train, y_train, epochs=5, batch_size=16, verbose=0)
+        self.model = Sequential([
+            LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
+            LSTM(50),
+            Dense(1, activation='sigmoid')
+        ])
+        self.model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        self.model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=0)
 
-    preds = (model.predict(X_test) > 0.5).astype(int).flatten()
-    acc = accuracy_score(y_test, preds)
-    mae = mean_absolute_error(y_test, preds)
+        preds = (self.model.predict(X_test) > 0.5).astype(int)
+        return self.evaluar_modelo(self.model, X_test, y_test)
 
-    return {
-        "accuracy": acc,
-        "mae": mae,
-        "real": y_test.tolist(),
-        "predicciones": preds.tolist(),
-        "loss": history.history["loss"]
-    }
+    def predict(self, X):
+        return (self.model.predict(X) > 0.5).astype(int)
