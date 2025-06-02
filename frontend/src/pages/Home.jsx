@@ -11,6 +11,8 @@ import VolatilidadYBetaGrafico from "../components/VolatilidadYBetaGrafico";
 import useActivos from "../hooks/useActivos";
 import { usePortfolioMetrics } from "../hooks/usePortfolioMetrics";
 
+import { useTickers } from '../TickersContext';
+
 function Home() {
   const {
     activos,
@@ -31,7 +33,7 @@ function Home() {
     diferencia_total_pct,
   } = useActivos();
 
-
+  const { tickers } = useTickers();
   const { volatilidadData, betaData } = usePortfolioMetrics(activos);
 
   if (isLoading) {
@@ -60,14 +62,18 @@ function Home() {
             <CardUsageExample text="Inversión Actual" number={`$${inversion_actual.toFixed(2)}`} />
             <CardUsageExample text="Diferencia" number={`${diferencia_total_pct.toFixed(2)}%`} />
           </div>
-        
 
           {/* Tabla y Modal */}
           <section className="mt-6 max-w-7xl mx-auto">
-            <TableUsageExample data={activos} handleDeleteActivo={handleDeleteActivo} onOpenCompra={handleOpenCompra} />
+            <TableUsageExample
+              data={activos || []} // por si acaso
+              onOpenCompra={handleOpenCompra}
+              handleDeleteActivo={handleDeleteActivo}
+            />
 
             {openCompra && (
               <ModalCompra
+              tickers = {tickers}
                 open={openCompra}
                 onClose={handleCloseCompra}
                 onSubmit={handleCreateActivo}
@@ -83,7 +89,6 @@ function Home() {
 
           {/* Gráficos */}
           <section className="mt-6 max-w-7xl flex flex-col md:flex-row gap-6">
-        
             <div className="md:w-1/2">
               <DonutChart data={activos} />
             </div>

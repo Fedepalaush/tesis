@@ -154,7 +154,6 @@ class ActivoListCreateView(generics.ListCreateAPIView):
             diferencia_total_pct = (total_ganancia / total_invertido) * 100
         else:
             diferencia_total_pct = 0
-        diferencia_total = (total_ganancia / total_invertido) * 100,
 
 
         return Response({

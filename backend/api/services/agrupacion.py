@@ -19,9 +19,9 @@ def obtener_datos_acciones(tickers, start_date=None, end_date=None):
                 Q(date__gte=start_date) &
                 Q(date__lte=end_date)
             ).values('date', 'close_price').order_by('date')
-
             # Convertir los datos a un DataFrame
             df = pd.DataFrame(list(stock_data))
+            print(df)
             df['close_price'] = df['close_price'].astype(float)  # 🔧 Convertir Decimal a flo
             
             if df.empty:

@@ -12,7 +12,7 @@ function ModalCompra({
   setPrecioCompra,
   cantidad,
   setCantidad,
-  tickers
+   tickers = []  // Valor por defecto
 }) {
   const handleSubmit = (e) => {
     e.preventDefault();
