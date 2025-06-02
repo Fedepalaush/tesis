@@ -11,6 +11,10 @@ from rest_framework.permissions import AllowAny
 from api.serializers import UserSerializer
 from api.views.base import CachedAPIView
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from api.serializers import UserRegisterSerializer 
 
 class CheckUserExistsView(CachedAPIView):
     """
@@ -42,3 +46,12 @@ class CheckUserExistsView(CachedAPIView):
         self.set_in_cache(cache_key, exists, timeout=3600)
 
         return self.success_response(data={"exists": exists})
+
+class RegisterUserView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = UserRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Usuario creado correctamente"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

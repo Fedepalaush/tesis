@@ -1,10 +1,10 @@
 
 from rest_framework.serializers import ModelSerializer
 from .models import Activo
-from rest_framework import serializers
 from django.contrib.auth.models import User
-from rest_framework import serializers
 import json
+from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
     
 class UserSerializer(serializers.ModelSerializer):
         class Meta:
@@ -79,4 +79,29 @@ class ActivoSerializer(serializers.ModelSerializer):
             return round(porcentaje, 2)
         
         return 0.0
+
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        validators=[UniqueValidator(queryset=User.objects.all(), message="El nombre de usuario ya existe.")]
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'password', 'confirm_password')
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({
+                "confirm_password": "Las contraseñas no coinciden."
+            })
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        user = User.objects.create_user(**validated_data)
+        return user
 

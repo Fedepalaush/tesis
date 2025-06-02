@@ -6,49 +6,61 @@ import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 export default function FormRegister({ route, method }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirm_password, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const name = method === "login" ? "Login" : "Register";
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+  if (password !== confirm_password) {
+    setError("Las contraseñas no coinciden");
+    return;
+  }
+
+  setLoading(true);
+  setError(""); // Limpiar errores previos
+
+  try {
+    const userExists = await checkIfUserExists(username);
+    if (userExists) {
+      setError("Este nombre de usuario ya está en uso");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    const res = await api.post(route, { username, password, confirm_password });
 
-    try {
-      const userExists = await checkIfUserExists(username);
-      if (userExists) {
-        setError("Este nombre de usuario ya está en uso");
-        setLoading(false);
-        return;
-      }
-
-      const res = await api.post(route, { username, password });
-      if (method === "login") {
-        localStorage.setItem(ACCESS_TOKEN, res.data.access);
-        localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
-        navigate("/");
-      } else {
-        navigate("/login");
-      }
-    } catch (error) {
-
-      setLoading(false);
+    if (method === "login") {
+      localStorage.setItem(ACCESS_TOKEN, res.data.access);
+      localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
+      navigate("/");
+    } else {
+      navigate("/login");
     }
-  };
+  } catch (error) {
+    setLoading(false);
+
+    if (error.response && error.response.data) {
+      // Obtenemos todos los mensajes de error y los unimos en un string
+      const messages = Object.values(error.response.data)
+        .flat()
+        .join(" ");
+      setError(messages);
+    } else {
+      setError("Error desconocido. Intenta nuevamente.");
+    }
+  }
+};
+
 
   const checkIfUserExists = async (username) => {
     try {
       console.log('intento el try')
-      const res = await api.get(`/api/usuarios/exists/${username}`);
+      const res = await api.get(`/user/exists/${username}`);
       console.log(res)
       console.log('este si existe')
       return res.data.exists;
@@ -87,7 +99,7 @@ export default function FormRegister({ route, method }) {
             <input
               type="password"
               placeholder="Confirma Contraseña"
-              value={confirmPassword}
+              value={confirm_password}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full border-none bg-transparent outline-none placeholder-italic focus:outline-none"
             />

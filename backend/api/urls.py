@@ -7,6 +7,7 @@ urlpatterns = [
     # Auth
     path("token/", TokenObtainPairView.as_view(), name="get_token"),
     path("token/refresh/", TokenRefreshView.as_view(), name="refresh"),
+    path("register/", RegisterUserView.as_view(), name="register"),
 
     # Schema / Docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -19,7 +20,7 @@ urlpatterns = [
     path("activo/", ActivoDetailView.as_view(), name="detalle-activo"),
 
     # Usuarios
-    path('usuarios/exists/<str:username>/', CheckUserExistsView.as_view(), name='check-user-exists'),
+    path('user/exists/<str:username>/', CheckUserExistsView.as_view(), name='check-user-exists'),
 
     # Analytics
     path('retornos-mensuales/', RetornosMensualesView.as_view(), name='retornos-mensuales'),
