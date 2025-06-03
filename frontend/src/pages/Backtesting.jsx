@@ -5,8 +5,18 @@ import StrategiesForm from "../components/StrategiesForm";
 import TradesTable from "../components/TradesTable";
 import { runBacktest } from "../api";
 import BacktestResults from "../components/BacktestResults";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 function Backtest() {
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: true
+  });
+
   const [formData, setFormData] = useState({
     ticker: "AAPL",
     inicio: "2020-01-01",
@@ -27,7 +37,6 @@ function Backtest() {
   });
   const [result, setResult] = useState(null);
   const [total, setTotal] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -79,24 +88,22 @@ function Backtest() {
 
   
   const runBacktestHandler = async () => {
-    setIsLoading(true);
-    try {
-      const response = await runBacktest(formData);
-      const datos = response.data?.data;
+    await execute(
+      async () => {
+        const response = await runBacktest(formData);
+        const datos = response.data?.data;
 
-      if (datos?.Trades) {
-        setResult(datos.Trades);
-        setTotal(datos);
-      } else {
-        console.error("La respuesta no contiene datos de trades.");
-        setResult([]);
-}
-    } catch (error) {
-      console.error("Error running backtest:", error);
-      setResult([]);
-    } finally {
-      setIsLoading(false);
-    }
+        if (datos?.Trades) {
+          setResult(datos.Trades);
+          setTotal(datos);
+          showSuccess(`Backtest completado: ${datos.Trades.length} operaciones encontradas`);
+        } else {
+          setResult([]);
+          showError("La respuesta no contiene datos de trades válidos");
+        }
+      },
+      'Ejecutando backtest...'
+    );
   };
 
   return (
@@ -113,17 +120,16 @@ function Backtest() {
           <div className="flex justify-center">
             <button
               onClick={runBacktestHandler}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-md mt-4 transition duration-300 w-full sm:w-auto"
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-semibold px-5 py-2 rounded-md mt-4 transition duration-300 w-full sm:w-auto"
             >
-              Ejecutar Backtest
+              {isLoading ? 'Ejecutando...' : 'Ejecutar Backtest'}
             </button>
           </div>
         </div>
 
         <div className="mt-6 w-full max-w-full px-2 sm:px-4">
-          {isLoading ? (
-            <p className="text-gray-300 text-center">Cargando resultados...</p>
-          ) : result ? (
+          {result ? (
             result.length > 0 ? (
               <div className="overflow-x-auto">
                 <BacktestResults total={total} />

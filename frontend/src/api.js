@@ -1,22 +1,52 @@
 import axios from "axios"
 import { ACCESS_TOKEN } from "./constants"
+import { API_CONFIG, getCurrentEnvConfig } from "./config/api.config"
 
-// Usa la variable de entorno VITE_API_URL para configurar la baseURL de la API.
-// Ejemplo en .env: VITE_API_URL=http://localhost:8000/api
+// Get current environment configuration
+const envConfig = getCurrentEnvConfig();
+
+// Create axios instance with centralized configuration
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000"
+    baseURL: API_CONFIG.BASE_URL,
+    timeout: API_CONFIG.TIMEOUT,
 })
 
+// Request interceptor for authentication
 api.interceptors.request.use(
-    (config) =>{
+    (config) => {
         const token = localStorage.getItem(ACCESS_TOKEN);
-        if (token){
+        if (token) {
             config.headers.Authorization = `Bearer ${token}`
         }
+        
+        // Log requests in development
+        if (envConfig.enableLogging) {
+            console.log(`🔄 API Request: ${config.method?.toUpperCase()} ${config.url}`, config);
+        }
+        
         return config
     },
     (error) => {
+        if (envConfig.enableLogging) {
+            console.error('❌ API Request Error:', error);
+        }
         return Promise.reject(error)
+    }
+)
+
+// Response interceptor for logging and error handling
+api.interceptors.response.use(
+    (response) => {
+        if (envConfig.enableLogging) {
+            console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+        }
+        return response;
+    },
+    (error) => {
+        if (envConfig.enableLogging) {
+            console.error('❌ API Response Error:', error.response?.data || error.message);
+        }
+        return Promise.reject(error);
     }
 )
 

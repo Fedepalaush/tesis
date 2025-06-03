@@ -5,12 +5,20 @@ import DateRangePicker from '../components/DateRangePicker';
 import CorrelationMatrixPlot from '../components/CorrelationMatrixPlot';
 import { fetchCorrelationMatrix } from '../api';
 import { useTickers } from '../TickersContext';
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Correlacion = () => {
   const { tickers } = useTickers();
+  const { showError, showSuccess } = useNotification();
   const [correlationMatrix, setCorrelationMatrix] = useState(null);
   const [selectedTickers, setSelectedTickers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: true
+  });
 
   const today = new Date();
   const defaultEndDate = today.toISOString().split('T')[0];
@@ -35,24 +43,22 @@ const Correlacion = () => {
 
   const handleSubmit = async () => {
     if (selectedTickers.length === 0) {
-      alert('Por favor, selecciona al menos un ticker.');
+      showError('Por favor, selecciona al menos un ticker.');
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const data = await fetchCorrelationMatrix(selectedTickers, startDate, endDate); // Llamamos a la función aquí
-      if (data.correlation_matrix) {
-        setCorrelationMatrix(data.correlation_matrix);
-      } else {
-        console.error('Error al obtener la matriz de correlación:', data.error);
-      }
-    } catch (error) {
-      console.error('Error al obtener la matriz de correlación:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    await execute(
+      async () => {
+        const data = await fetchCorrelationMatrix(selectedTickers, startDate, endDate);
+        if (data.correlation_matrix) {
+          setCorrelationMatrix(data.correlation_matrix);
+          showSuccess('Matriz de correlación calculada exitosamente');
+        } else {
+          throw new Error(data.error || 'Error al obtener la matriz de correlación');
+        }
+      },
+      'Calculando matriz de correlación...'
+    );
   };
 
   return (
@@ -75,19 +81,16 @@ const Correlacion = () => {
           <div className="mb-4">
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+              disabled={isLoading || selectedTickers.length === 0}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded transition-colors"
             >
-              Ejecutar
+              {isLoading ? 'Calculando...' : 'Ejecutar'}
             </button>
           </div>
         </div>
         <div className="w-full max-w-4xl">
-          {isLoading ? (
-            <p>Cargando Matriz de Correlación...</p>
-          ) : (
-            correlationMatrix && (
-              <CorrelationMatrixPlot correlationMatrix={correlationMatrix} />
-            )
+          {correlationMatrix && (
+            <CorrelationMatrixPlot correlationMatrix={correlationMatrix} />
           )}
         </div>
       </div>

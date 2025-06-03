@@ -1,24 +1,28 @@
-// src/AnalisisActivo.jsx
 import React from "react";
-import BaseLayout from "../components/BaseLayout"; // Asumo que BaseLayout es .js o .jsx, ajusta si es necesario
+import BaseLayout from "../components/BaseLayout";
 import TickerFormControls from "../components/TickerFormControls";
 import SummaryCardsDisplay from "../components/SummaryCardsDisplay";
 import StockChartDisplay from "../components/StockChartDisplay";
 import IndicatorGaugesDisplay from "../components/IndicatorGaugesDisplay";
 import RecommendationsBox from "../components/RecommendationsBox";
 import SemaforoSignalsDisplay from "../components/SemaforoSignalsDisplay";
-//impotar todas las constantes
-import { tickersBM } from "../constants"; // Asegúrate de que esta ruta sea correcta
-// Los hooks usualmente se mantienen como .js, pero ajusta la importación si también los renombraste a .jsx
+import LoadingState from "../components/ui/LoadingState";
+import ErrorState from "../components/ui/ErrorState";
+import EmptyState from "../components/ui/EmptyState";
+
+// Hooks
 import useTickerForm from '../hooks/useTickerForm';
 import useStockData from '../hooks/useStockData';
 import useFinancialIndicators from '../hooks/useFinancialIndicators';
 import useRecommendations from '../hooks/useRecommendations';
+import { useAsyncOperation } from '../hooks/useAsyncOperation';
 import { useTickers } from '../TickersContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 const AnalisisActivo = () => {
   const activeItem = "AnalisisActivo";
   const { tickers } = useTickers();
+  const { showError } = useNotification();
 
   const {    
     ticker,
@@ -44,12 +48,17 @@ const AnalisisActivo = () => {
   
   React.useEffect(() => {
     if (fetchError) {
-        setFetchError(null);
+      showError(`Error al cargar datos: ${fetchError}`);
+      setFetchError(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticker, startDate, endDate]);
+  }, [fetchError, showError, setFetchError]);
+
+  const handleRetry = () => {
+    window.location.reload();
+  };
 
   const showDataSections = !loading && !fetchError && stockData && stockData.length > 0;
+  const showEmptyState = !loading && !fetchError && (!stockData || stockData.length === 0);
 
   return (
     <BaseLayout activeItem={activeItem}>
@@ -65,17 +74,15 @@ const AnalisisActivo = () => {
         />
 
         {fetchError && (
-          <div className="p-4 bg-red-600 text-white rounded w-full md:w-3/4 lg:w-2/4 mx-auto my-4 text-center">
-            <h2 className="text-lg font-bold">Error</h2>
-            <p>{fetchError}</p>
-          </div>
+          <ErrorState 
+            error={fetchError}
+            title="Error al cargar datos"
+            onRetry={handleRetry}
+            showRetry={true}
+          />
         )}
 
-        {loading && (
-          <div className="p-4 text-white text-center w-full my-4">
-            <p className="text-xl">Cargando datos...</p>
-          </div>
-        )}
+        {loading && <LoadingState message="Cargando análisis del activo..." />}
 
         {showDataSections && (
           <>
@@ -103,10 +110,11 @@ const AnalisisActivo = () => {
           </>
         )}
         
-        {!loading && !fetchError && (!stockData || stockData.length === 0) && (
-          <div className="p-4 text-white text-center w-full my-8">
-            <p className="text-xl">No hay datos disponibles para mostrar. Por favor, ajusta el ticker o el rango de fechas.</p>
-          </div>
+        {showEmptyState && (
+          <EmptyState 
+            title="No hay datos de análisis disponibles"
+            description="No se encontraron datos para el ticker y rango de fechas seleccionados."
+          />
         )}
       </div>
     </BaseLayout>

@@ -3,15 +3,24 @@ import Plot from "react-plotly.js";
 import { fetchEMASignals } from "../api";
 import BaseLayout from "../components/BaseLayout";
 import { useTickers } from "../TickersContext";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const MediasMoviles = () => {
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: true
+  });
+
   const [ema4, setEma4] = useState(4);
   const [ema9, setEma9] = useState(9);
   const [ema18, setEma18] = useState(18);
   const [useTriple, setUseTriple] = useState(true);
   const { tickers } = useTickers();
   const [signals, setSignals] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setSignals([]);
@@ -19,21 +28,20 @@ const MediasMoviles = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const responseData = await fetchEMASignals(
-        tickers,
-        ema4,
-        ema9,
-        ema18,
-        useTriple
-      );
-      setSignals(responseData.signals);
-    } catch (error) {
-      console.error("Error fetching signals:", error);
-    } finally {
-      setLoading(false);
-    }
+    await execute(
+      async () => {
+        const responseData = await fetchEMASignals(
+          tickers,
+          ema4,
+          ema9,
+          ema18,
+          useTriple
+        );
+        setSignals(responseData.signals);
+        showSuccess(`Señales de medias móviles calculadas: ${responseData.signals?.length || 0} resultados`);
+      },
+      'Calculando señales de medias móviles...'
+    );
   };
 
   return (
@@ -88,18 +96,15 @@ const MediasMoviles = () => {
 
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded w-full transition duration-300"
+            disabled={isLoading}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded w-full transition duration-300"
           >
-            Obtener señales
+            {isLoading ? 'Calculando...' : 'Obtener señales'}
           </button>
         </form>
 
         <div className="mt-10">
-          {loading ? (
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500" />
-            </div>
-          ) : signals.length > 0 ? (
+          {signals.length > 0 ? (
             signals.map((signal, index) => (
               <div key={index} className="mb-10 bg-gray-900 rounded-lg p-6 shadow-lg">
                 <h2 className="text-xl font-semibold mb-2">{signal.ticker}</h2>

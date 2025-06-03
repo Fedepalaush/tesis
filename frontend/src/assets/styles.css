@@ -1,5 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+/* Screen reader only - accessibility utility class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .semaforo {
   display: flex;
   flex-direction: column;
@@ -10,6 +23,13 @@
   border: 4px solid #333;
   border-radius: 10px;
   background-color: #222;
+  position: relative;
+}
+
+.semaforo-lights {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .label {
@@ -18,6 +38,7 @@
   font-weight: 700;
   color: #fff;
   margin-bottom: 15px;
+  text-align: center;
 }
 
 .light {
@@ -26,18 +47,34 @@
   border-radius: 50%;
   margin: 15px 0;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .red {
   background-color: rgba(255, 0, 0, 0.2);
 }
 
+.red.active {
+  background-color: rgba(255, 0, 0, 0.9);
+  border-color: #ff6b6b;
+}
+
 .yellow {
   background-color: rgba(255, 255, 0, 0.2);
 }
 
+.yellow.active {
+  background-color: rgba(255, 255, 0, 0.9);
+  border-color: #ffd93d;
+}
+
 .green {
   background-color: rgba(0, 255, 0, 0.2);
+}
+
+.green.active {
+  background-color: rgba(0, 255, 0, 0.9);
+  border-color: #6bcf7f;
 }
 
 .active {

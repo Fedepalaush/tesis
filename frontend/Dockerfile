@@ -1,7 +1,22 @@
 ########################
 # ① Etapa de build SPA
 ########################
-FROM node:21-alpine AS builder
+FROM node:20-alpine AS builder
+
+# Install Python and build dependencies for native modules (canvas)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    musl-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev
 
 WORKDIR /app
 COPY package*.json ./

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import BaseLayout from "../components/BaseLayout";
 import { useTickers } from "../TickersContext";
 import api from "../api";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const months = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -10,11 +12,17 @@ const months = [
 
 const DividendCalendar = () => {
   const { tickers } = useTickers();
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: false // We'll handle notifications manually
+  });
+
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [dividendosPorMes, setDividendosPorMes] = useState({});
-  const [error, setError] = useState("");
   const [notification, setNotification] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleTickerChange = (event) => {
     const ticker = event.target.value;
@@ -39,20 +47,37 @@ const DividendCalendar = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
+    
+    if (selectedTickers.length === 0) {
+      showError("Selecciona al menos un ticker");
+      return;
+    }
+
+    await execute(async () => {
       const params = new URLSearchParams();
       selectedTickers.forEach((ticker) => params.append("tickers", ticker));
 
       const response = await api.get("/dividendos/", { params });
-
+      
       setDividendosPorMes(response.data.dividendos);
-      setError("");
-    } catch (err) {
-      setError("Error al obtener los datos de dividendos.");
-    } finally {
-      setLoading(false);
-    }
+      
+      // Calculate total dividend amount for success message
+      const totalAmount = Object.values(response.data.dividendos)
+        .reduce((sum, monthData) => sum + (monthData?.total || 0), 0);
+      
+      showSuccess(
+        `Calendario generado: ${selectedTickers.length} ticker${selectedTickers.length !== 1 ? 's' : ''} - Total anual: $${totalAmount.toFixed(2)}`
+      );
+    }, {
+      loadingMessage: `Generando calendario de dividendos para ${selectedTickers.length} ticker${selectedTickers.length !== 1 ? 's' : ''}...`,
+      onError: (error) => {
+        console.error('Error al obtener dividendos:', error);
+        showError(
+          error.response?.data?.message || 
+          "Error al obtener los datos de dividendos. Verifica los tickers e intenta nuevamente."
+        );
+      }
+    });
   };
 
   const tickersDisponibles = tickers.filter(ticker => !selectedTickers.includes(ticker));
@@ -85,13 +110,20 @@ const DividendCalendar = () => {
               Añadir Todos
             </button>
 
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded transition">
-              Generar Calendario
+            <button 
+              type="submit" 
+              disabled={isLoading || selectedTickers.length === 0}
+              className={`px-4 py-2 rounded transition ${
+                isLoading || selectedTickers.length === 0
+                  ? 'bg-gray-600 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-500'
+              } text-white`}
+            >
+              {isLoading ? "Generando..." : "Generar Calendario"}
             </button>
           </form>
 
           {notification && <p className="text-green-400 mb-4">{notification}</p>}
-          {error && <p className="text-red-400 mb-4">{error}</p>}
 
           <div className="flex flex-wrap gap-2 mb-4">
             {selectedTickers.map((ticker) => (
@@ -120,33 +152,27 @@ const DividendCalendar = () => {
             </button>
           )}
 
-          {loading && (
-            <div className="flex justify-center my-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500 border-opacity-75"></div>
-            </div>
-          )}
+          {/* Removed local loading spinner since we use global loading now */}
 
-          {!loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {months.map((month, index) => (
-                <div key={index} className="bg-gray-800 p-4 rounded-lg shadow hover:shadow-xl transition">
-                  <h3 className="text-lg font-semibold mb-2">{month}</h3>
-                  <p className="mb-2">
-                    <strong>
-                      {dividendosPorMes[index]?.total ? `$${dividendosPorMes[index].total.toFixed(2)}` : "Sin pagos"}
-                    </strong>
-                  </p>
-                  <ul className="list-disc ml-5 text-sm text-gray-300 space-y-1">
-                    {dividendosPorMes[index]?.detalles?.map(({ empresa, monto }, i) => (
-                      <li key={i}>
-                        {empresa}: <span className="text-white font-medium">${monto.toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {months.map((month, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded-lg shadow hover:shadow-xl transition">
+                <h3 className="text-lg font-semibold mb-2">{month}</h3>
+                <p className="mb-2">
+                  <strong>
+                    {dividendosPorMes[index]?.total ? `$${dividendosPorMes[index].total.toFixed(2)}` : "Sin pagos"}
+                  </strong>
+                </p>
+                <ul className="list-disc ml-5 text-sm text-gray-300 space-y-1">
+                  {dividendosPorMes[index]?.detalles?.map(({ empresa, monto }, i) => (
+                    <li key={i}>
+                      {empresa}: <span className="text-white font-medium">${monto.toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </BaseLayout>

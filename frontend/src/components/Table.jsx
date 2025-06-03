@@ -55,44 +55,80 @@ export function TableUsageExample({ data = [], onOpenCompra, handleDeleteActivo 
 return (
   <Card>
     <div className="flex items-center justify-between mb-3">
-      <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold">Mis Inversiones</h3>
-      <Button variant="secondary" color="green" size="sm" onClick={() => onOpenCompra(true, "")}>
+      <h3 
+        id="investments-table-title"
+        className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-semibold"
+      >
+        Mis Inversiones
+      </h3>
+      <Button 
+        variant="secondary" 
+        color="green" 
+        size="sm" 
+        onClick={() => onOpenCompra(true, "")}
+        aria-label="Agregar nueva inversión"
+      >
         +
       </Button>
     </div>
-    <Table>
+    <Table 
+      aria-labelledby="investments-table-title"
+      aria-describedby={recomendaciones.length > 0 ? "investments-recommendations" : undefined}
+    >
       <TableHead>
         <TableRow>
-          <TableHeaderCell>Ticker</TableHeaderCell>
-          <TableHeaderCell>Cantidad</TableHeaderCell>
-          <TableHeaderCell>PPC</TableHeaderCell>
-          <TableHeaderCell>Precio Actual</TableHeaderCell>
-          <TableHeaderCell>Gan/Per %</TableHeaderCell>
-          <TableHeaderCell>Gan/Per</TableHeaderCell>
-          <TableHeaderCell>Total</TableHeaderCell>
-          <TableHeaderCell>Acciones</TableHeaderCell>
+          <TableHeaderCell scope="col">Ticker</TableHeaderCell>
+          <TableHeaderCell scope="col">Cantidad</TableHeaderCell>
+          <TableHeaderCell scope="col">PPC</TableHeaderCell>
+          <TableHeaderCell scope="col">Precio Actual</TableHeaderCell>
+          <TableHeaderCell scope="col">Gan/Per %</TableHeaderCell>
+          <TableHeaderCell scope="col">Gan/Per</TableHeaderCell>
+          <TableHeaderCell scope="col">Total</TableHeaderCell>
+          <TableHeaderCell scope="col">Acciones</TableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {safeData.map((item) => (
           <TableRow key={item.ticker}>
-            <TableCell>{item.ticker}</TableCell>
+            <TableCell>
+              <span className="font-medium">{item.ticker}</span>
+            </TableCell>
             <TableCell>{item.cantidad}</TableCell>
             <TableCell>{`$${item.precioCompra.toFixed(2)}`}</TableCell>
             <TableCell>{`$${item.precioActual.toFixed(2)}`}</TableCell>
             <TableCell style={{ color: item.ganancia_porcentaje >= 0 ? "green" : "red" }}>
-              {(item.ganancia_porcentaje.toFixed(2))}%
+              <span 
+                aria-label={`${item.ganancia_porcentaje >= 0 ? 'Ganancia' : 'Pérdida'} del ${item.ganancia_porcentaje.toFixed(2)} por ciento`}
+              >
+                {(item.ganancia_porcentaje.toFixed(2))}%
+              </span>
             </TableCell>
             <TableCell style={{ color: item.ganancia.toFixed(2) >= 0 ? "green" : "red" }}>
-              {`$${item.ganancia.toFixed(2)}`}
+              <span 
+                aria-label={`${item.ganancia.toFixed(2) >= 0 ? 'Ganancia' : 'Pérdida'} de ${item.ganancia.toFixed(2)} dólares`}
+              >
+                {`$${item.ganancia.toFixed(2)}`}
+              </span>
             </TableCell>
             <TableCell>{`$${(item.total_actual).toFixed(2)}`}</TableCell>
             <TableCell>
-              <div className="flex gap-3">
-                <Button variant="secondary" color="green" size="sm" onClick={() => onOpenCompra(true, item.ticker)}>
+              <div className="flex gap-3" role="group" aria-label={`Acciones para ${item.ticker}`}>
+                <Button 
+                  variant="secondary" 
+                  color="green" 
+                  size="sm" 
+                  onClick={() => onOpenCompra(true, item.ticker)}
+                  aria-label={`Comprar más acciones de ${item.ticker}`}
+                >
                   +
                 </Button>
-                <Button variant="secondary" color="red" size="sm" onClick={() => handleDeleteActivo(item.id)}>
+                <Button 
+                  variant="secondary" 
+                  color="red" 
+                  size="sm" 
+                  onClick={() => handleDeleteActivo(item.id)}
+                  aria-label={`Eliminar inversión en ${item.ticker}`}
+                >
                   -
                 </Button>
               </div>
@@ -101,18 +137,23 @@ return (
         ))}
 
         <TableRow>
-          <TableCell colSpan={6}></TableCell>
-          <TableCell>{`$${totalSum}`}</TableCell>
+          <TableCell colSpan={6} aria-hidden="true"></TableCell>
+          <TableCell>
+            <strong aria-label={`Total de todas las inversiones: ${totalSum} dólares`}>
+              {`$${totalSum}`}
+            </strong>
+          </TableCell>
+          <TableCell aria-hidden="true"></TableCell>
         </TableRow>
 
         {Array.isArray(recomendaciones) && recomendaciones.length > 0 && (
           <TableRow>
             <TableCell colSpan={8}>
-              <div>
-                <strong>Recomendaciones:</strong>
-                <ul style={{ listStyleType: "disc", paddingLeft: "20px" }}>
+              <div id="investments-recommendations" role="region" aria-labelledby="recommendations-title">
+                <strong id="recommendations-title">Recomendaciones:</strong>
+                <ul style={{ listStyleType: "disc", paddingLeft: "20px" }} role="list">
                   {recomendaciones.map((recomendacion, index) => (
-                    <li key={index}>{recomendacion}</li>
+                    <li key={index} role="listitem">{recomendacion}</li>
                   ))}
                 </ul>
               </div>

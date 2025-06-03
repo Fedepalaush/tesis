@@ -3,25 +3,33 @@ import BaseLayout from "../components/BaseLayout";
 import HeatmapChart from "../components/HeatmapChart";
 import { fetchMonthlyReturns } from "../api";
 import { useTickers } from "../TickersContext";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const MonthlyReturnsChart = () => {
   const { tickers } = useTickers();
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: true
+  });
+
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTicker, setSelectedTicker] = useState("AAPL");
   const [selectedYears, setSelectedYears] = useState(10);
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
-      try {
-        const responseData = await fetchMonthlyReturns(selectedTicker, selectedYears);
-        setData(responseData.data);
-      } catch (error) {
-        console.error("Error al obtener los retornos mensuales:", error);
-      } finally {
-        setLoading(false);
-      }
+      await execute(
+        async () => {
+          const responseData = await fetchMonthlyReturns(selectedTicker, selectedYears);
+          setData(responseData.data);
+          showSuccess(`Retornos mensuales de ${selectedTicker} cargados exitosamente`);
+        },
+        `Cargando retornos mensuales de ${selectedTicker}...`
+      );
     };
 
     fetchData();
@@ -94,7 +102,7 @@ const MonthlyReturnsChart = () => {
           </div>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="text-white text-lg animate-pulse">Cargando datos...</div>
         ) : (
           <div className="w-full max-w-6xl p-4">

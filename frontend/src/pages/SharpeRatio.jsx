@@ -6,6 +6,8 @@ import YearsSelectors from "../components/YearsSelector";
 import SharpePlotGraph from "../components/SharpePlotGraph";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { fetchSharpeRatioData } from "../api"; // Importa la función desde api.js
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const sectorLabels = {
   "Todos": "Todos",
@@ -23,9 +25,16 @@ const sectorLabels = {
 };
 
 const SharpePlot = () => {
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: true
+  });
+
   const [sharpeData, setSharpeData] = useState([]);
   const [selectedSector, setSelectedSector] = useState("Information Technology");
-  const [loading, setLoading] = useState(false);
   const [xYears, setXYears] = useState(5); // Años para el eje X
   const [yYears, setYYears] = useState(2); // Años para el eje Y
 
@@ -34,16 +43,14 @@ const SharpePlot = () => {
   }, [selectedSector, xYears, yYears]); // Llamada cada vez que cambian el sector o los años
 
   const fetchData = async (sector, xYears, yYears) => {
-    setLoading(true); // Indicar que la carga está en progreso
-    try {
-      const data = await fetchSharpeRatioData(sector, xYears, yYears);
-      console.log(data)
-      setSharpeData(data);
-    } catch (error) {
-      console.error("Error al obtener datos del Sharpe Ratio:", error);
-    } finally {
-      setLoading(false); // Indicar que la carga ha terminado
-    }
+    await execute(
+      async () => {
+        const data = await fetchSharpeRatioData(sector, xYears, yYears);
+        setSharpeData(data);
+        showSuccess(`Datos del Sharpe Ratio para ${sectorLabels[sector]} cargados exitosamente`);
+      },
+      `Cargando datos del Sharpe Ratio para ${sectorLabels[sector]}...`
+    );
   };
 
   const handleSectorChange = (event) => {
@@ -69,7 +76,7 @@ const SharpePlot = () => {
           handleXYearsChange={handleXYearsChange}
           handleYYearsChange={handleYYearsChange}
         />
-        {loading ? (
+        {isLoading ? (
           <LoadingIndicator />
         ) : (
 <SharpePlotGraph

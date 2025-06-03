@@ -4,8 +4,18 @@ import TickerSelector from "../components/TickerSelector";
 import CandlestickChart from "../components/CandlestickChart";
 import PivotPoints from "../components/PivotPoints";
 import BaseLayout from "../components/BaseLayout";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 const SoportesResistencias = () => {
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: false // We'll handle notifications manually for better UX
+  });
+
   const [data, setData] = useState([]);
   const [historical, setHistorical] = useState([]);
   const [limites, setLimites] = useState();
@@ -13,22 +23,22 @@ const SoportesResistencias = () => {
   const [lastExecution, setLastExecution] = useState(null);
   const [showToast, setShowToast] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetchPivotPoints(selectedTicker);
+  const fetchData = async (ticker) => {
+    await execute(
+      async () => {
+        const response = await fetchPivotPoints(ticker);
         setData(response.data);
         setHistorical(response.historical);
         setLimites(response.limites);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, [selectedTicker]);
+        showSuccess(`Datos de soportes y resistencias actualizados para ${ticker}`);
+      },
+      `Cargando datos de ${ticker}...`
+    );
+  };
 
   useEffect(() => {
+    fetchData(selectedTicker);
+  }, [selectedTicker]);  useEffect(() => {
     const fetchExecution = async () => {
       try {
         const apiBase = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || "http://localhost:8000";
@@ -39,18 +49,16 @@ const SoportesResistencias = () => {
         setTimeout(() => setShowToast(false), 10000);
       } catch (error) {
         console.error("Error al obtener la última ejecución:", error);
+        showError("Error al obtener información de última actualización");
       }
     };
 
     fetchExecution();
   }, []);
 
-  if (data.length === 0 || historical.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <p className="text-white text-lg animate-pulse">Cargando datos...</p>
-      </div>
-    );
+  // Replace local loading with global loading state
+  if (isLoading && data.length === 0) {
+    return null; // Global loading spinner will be shown
   }
 
   const pivotLines = PivotPoints({ data, historical, limites });

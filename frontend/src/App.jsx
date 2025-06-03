@@ -5,6 +5,9 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import NotificationContainer from "./components/NotificationContainer";
+import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
+import { useAuth } from "./contexts/AuthContext";
 import api from "./api";
 
 import "./App.css";
@@ -21,9 +24,15 @@ import KMeans from "./pages/KMeans";
 import MediasMoviles from "./pages/MediasMoviles";
 import DividendCalendar from "./pages/CalendarioDividendos";
 import EntrenamientoPage from "./pages/EntrenamientoPage";
+import AccessibilityDemo from "./pages/AccessibilityDemo";
 
 function Logout() {
-  localStorage.clear();
+  const { logout } = useAuth();
+  
+  React.useEffect(() => {
+    logout();
+  }, [logout]);
+  
   return <Navigate to="/login/" />;
 }
 
@@ -42,8 +51,9 @@ function App() {
   
   return (
     <div className="">
-
-    <BrowserRouter>
+      <NotificationContainer />
+      <GlobalLoadingOverlay />
+      <BrowserRouter>
       <Routes>
         <Route
           path="/"
@@ -67,6 +77,7 @@ function App() {
         <Route path="/mediasMoviles" element={<MediasMoviles />} />
         <Route path="/calendarioDividendos" element={<DividendCalendar/>} />
         <Route path="/entrenamientoPage" element={<EntrenamientoPage/>} />
+        <Route path="/accessibility-demo" element={<AccessibilityDemo/>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

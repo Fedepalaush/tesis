@@ -6,9 +6,19 @@ import FormularioEntrenamiento from "../components/FormularioEntrenamiento";
 import IndicadoresModelo from "../components/IndicadoresModelo";
 import BaseLayout from "../components/BaseLayout";
 import MatrizConfusion from "../components/MatrizConfusion";
+import { useAsyncOperationWithLoading } from '../hooks/useAsyncOperationWithLoading';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function EntrenamientoPage() {
-  const { resultado, loading, entrenarModelo } = useEntrenamiento();
+  const { showError, showSuccess } = useNotification();
+  
+  // Use global loading system
+  const { execute, isLoading } = useAsyncOperationWithLoading({
+    useGlobalLoading: true,
+    showNotifications: false // We'll handle notifications manually for better UX
+  });
+
+  const { resultado, entrenarModelo } = useEntrenamiento();
 
   const datos = resultado?.data;
 
@@ -19,18 +29,26 @@ export default function EntrenamientoPage() {
       "bg-gray-100 border-gray-300 text-gray-800": !["Subirá", "Bajará"].includes(prediccion),
     });
 
+  // Enhanced form submission handler with global loading
+  const handleEntrenarModelo = async (formData) => {
+    await execute(
+      async () => {
+        await entrenarModelo(formData);
+        if (resultado?.error) {
+          throw new Error(resultado.error);
+        }
+        showSuccess('Modelo entrenado exitosamente');
+      },
+      'Entrenando modelo...'
+    );
+  };
+
   return (
     <BaseLayout>
       <div className="max-w-3xl mx-auto mt-8 px-4">
         <h1 className="text-2xl font-bold mb-4 text-slate-50">Entrenamiento de Modelos</h1>
 
-        <FormularioEntrenamiento onSubmit={entrenarModelo} loading={loading} />
-
-        {loading && (
-          <div className="mt-4 text-center text-slate-50 animate-pulse">
-            Entrenando modelo...
-          </div>
-        )}
+        <FormularioEntrenamiento onSubmit={handleEntrenarModelo} loading={isLoading} />
 
         {resultado?.error && (
           <div
