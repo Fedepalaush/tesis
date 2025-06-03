@@ -37,7 +37,7 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await api.post('/api/token/refresh/', {
+        const response = await api.post('/token/refresh/', {
           refresh: refreshToken,
         });
 

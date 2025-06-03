@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const res = await api.post("/api/token/refresh/", {
+      const res = await api.post("/token/refresh/", {
         refresh: refreshToken,
       }); 
       
@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      const res = await api.post("/api/token/", { username, password });
+      const res = await api.post("/token/", { username, password });
       
       // Handle both possible response structures for tests and real API
       const accessToken = res.data.access || res.data.access_token;
