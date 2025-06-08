@@ -41,11 +41,12 @@ const SoportesResistencias = () => {
   }, [selectedTicker]);  useEffect(() => {
     const fetchExecution = async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || "http://localhost:8000";
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
         const execResponse = await fetch(`${apiBase}/last-execution/`);
         const execData = await execResponse.json();
-        setLastExecution(execData.last_execution);
-        setShowToast(true);
+      console.log("execData:", execData);
+      setLastExecution(execData.data.last_execution);
+      setShowToast(true);
         setTimeout(() => setShowToast(false), 10000);
       } catch (error) {
         console.error("Error al obtener la última ejecución:", error);
@@ -61,7 +62,9 @@ const SoportesResistencias = () => {
     return null; // Global loading spinner will be shown
   }
 
-  const pivotLines = PivotPoints({ data, historical, limites });
+  const pivotLines = data.length > 0 && historical.length > 0
+  ? PivotPoints({ data, historical, limites })
+  : [];
 
   return (
     <BaseLayout>

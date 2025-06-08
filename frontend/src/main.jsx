@@ -15,7 +15,7 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 });
 
-const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/";
+const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 // Primero pedimos los tickers al backend
 axios.get(`${apiBase}/tickers/`)

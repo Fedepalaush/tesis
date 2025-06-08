@@ -2,10 +2,10 @@
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: "/api/token/",
-    REFRESH: "/api/token/refresh/",
-    REGISTER: "/api/user/register/",
-    VERIFY: "/api/token/verify/",
+    LOGIN: "/token/",
+    REFRESH: "/token/refresh/",
+    REGISTER: "/user/register/",
+    VERIFY: "/token/verify/",
   },
   
   // Activos

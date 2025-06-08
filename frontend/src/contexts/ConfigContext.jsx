@@ -12,7 +12,7 @@ export function useConfig() {
 
 export function ConfigProvider({ children }) {
   const [config, setConfig] = useState({
-    apiUrl: import.meta.env.VITE_API_URL || "http://localhost:8000",
+    apiUrl: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
     theme: 'dark',
     language: 'es',
     defaultTicker: 'AAPL',
@@ -45,7 +45,7 @@ export function ConfigProvider({ children }) {
 
   const resetConfig = () => {
     const defaultConfig = {
-      apiUrl: import.meta.env.VITE_API_URL || "http://localhost:8000",
+      apiUrl: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
       theme: 'dark',
       language: 'es',
       defaultTicker: 'AAPL',
