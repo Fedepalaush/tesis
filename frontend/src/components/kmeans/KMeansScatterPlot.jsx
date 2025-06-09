@@ -1,14 +1,15 @@
-import React from 'react';
+import React from "react";
 import Plot from "react-plotly.js";
 
 /**
- * KMeans scatter plot component
+ * Componente para visualizar resultados de agrupamiento K-Means
  */
-const KMeansScatterPlot = ({ 
-  clusterData, 
-  selectedParameters 
-}) => {
-  if (!clusterData || clusterData.length === 0) {
+const KMeansScatterPlot = ({ clusterData, selectedParameters }) => {
+  console.log(clusterData)
+  // Validación segura
+  const data = Array.isArray(clusterData) ? clusterData : [];
+
+  if (data.length === 0) {
     return (
       <div className="bg-gray-900 p-8 rounded-lg shadow text-center">
         <p className="text-gray-400">No hay datos para mostrar</p>
@@ -29,17 +30,18 @@ const KMeansScatterPlot = ({
     "rgba(231, 233, 237, 0.7)"
   ];
 
-  const [xParam, yParam] = selectedParameters.length === 2 
-    ? selectedParameters 
-    : ["mean_return", "volatility"];
+  const [xParam, yParam] =
+    selectedParameters && selectedParameters.length === 2
+      ? selectedParameters
+      : ["mean_return", "volatility"];
 
-  const clusters = [...new Set(clusterData.map((a) => a.Cluster))];
+  const clusters = [...new Set(data.map((d) => d.Cluster))];
 
   const traces = clusters.map((cluster, idx) => {
-    const filtered = clusterData.filter((a) => a.Cluster === cluster);
+    const items = data.filter((d) => d.Cluster === cluster);
     return {
-      x: filtered.map((a) => a[xParam]),
-      y: filtered.map((a) => a[yParam]),
+      x: items.map((d) => d[xParam]),
+      y: items.map((d) => d[yParam]),
       mode: "markers",
       type: "scatter",
       name: `Cluster ${cluster}`,
@@ -48,12 +50,15 @@ const KMeansScatterPlot = ({
         size: 12,
         line: {
           width: 2,
-          color: 'rgba(255, 255, 255, 0.3)'
+          color: "rgba(255, 255, 255, 0.3)"
         }
       },
-      text: filtered.map((a) => `${a.index}<br>${xParam}: ${a[xParam]?.toFixed(4)}<br>${yParam}: ${a[yParam]?.toFixed(4)}`),
+      text: items.map(
+        (d) =>
+          `${d.index}<br>${xParam}: ${d[xParam]?.toFixed(4)}<br>${yParam}: ${d[yParam]?.toFixed(4)}`
+      ),
       hoverinfo: "text",
-      hovertemplate: '%{text}<extra></extra>'
+      hovertemplate: "%{text}<extra></extra>"
     };
   });
 
@@ -62,20 +67,20 @@ const KMeansScatterPlot = ({
       text: `Agrupamiento K-Means: ${xParam} vs ${yParam}`,
       font: { color: "white", size: 18 }
     },
-    xaxis: { 
+    xaxis: {
       title: {
-        text: xParam.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        text: xParam.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
         font: { color: "white" }
       },
-      gridcolor: 'rgba(255, 255, 255, 0.1)',
+      gridcolor: "rgba(255, 255, 255, 0.1)",
       tickfont: { color: "white" }
     },
-    yaxis: { 
+    yaxis: {
       title: {
-        text: yParam.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        text: yParam.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
         font: { color: "white" }
       },
-      gridcolor: 'rgba(255, 255, 255, 0.1)',
+      gridcolor: "rgba(255, 255, 255, 0.1)",
       tickfont: { color: "white" }
     },
     autosize: true,
@@ -92,7 +97,7 @@ const KMeansScatterPlot = ({
   const config = {
     responsive: true,
     displayModeBar: true,
-    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+    modeBarButtonsToRemove: ["pan2d", "lasso2d", "select2d"],
     displaylogo: false
   };
 
@@ -101,41 +106,42 @@ const KMeansScatterPlot = ({
       <div className="mb-4">
         <h3 className="text-white text-lg font-medium mb-2">Resultados del Agrupamiento</h3>
         <div className="flex flex-wrap gap-4 text-sm text-gray-300">
-          <span>Total de activos: {clusterData.length}</span>
+          <span>Total de activos: {data.length}</span>
           <span>Clusters encontrados: {clusters.length}</span>
           <span>Parámetros: {xParam} vs {yParam}</span>
         </div>
       </div>
-      
+
       <div className="w-full overflow-x-auto">
-        <Plot 
-          data={traces} 
-          layout={layout} 
+        <Plot
+          data={traces}
+          layout={layout}
           config={config}
           style={{ width: "100%", height: "600px" }}
           useResizeHandler={true}
         />
       </div>
 
-      {/* Cluster summary */}
       <div className="mt-4">
         <h4 className="text-white font-medium mb-2">Resumen por Cluster:</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {clusters.map((cluster, idx) => {
-            const clusterItems = clusterData.filter((a) => a.Cluster === cluster);
+            const items = data.filter((d) => d.Cluster === cluster);
             return (
-              <div 
-                key={cluster} 
+              <div
+                key={cluster}
                 className="bg-gray-800 p-3 rounded border-l-4"
-                style={{ borderLeftColor: coloresClusters[idx % coloresClusters.length] }}
+                style={{
+                  borderLeftColor: coloresClusters[idx % coloresClusters.length]
+                }}
               >
                 <div className="text-white font-medium">Cluster {cluster}</div>
                 <div className="text-sm text-gray-300">
-                  {clusterItems.length} activo{clusterItems.length !== 1 ? 's' : ''}
+                  {items.length} activo{items.length !== 1 ? "s" : ""}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  {clusterItems.slice(0, 3).map(item => item.index).join(', ')}
-                  {clusterItems.length > 3 && '...'}
+                  {items.slice(0, 3).map((d) => d.index).join(", ")}
+                  {items.length > 3 && "…"}
                 </div>
               </div>
             );

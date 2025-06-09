@@ -1,8 +1,15 @@
 import React from 'react';
+import {
+  XMarkIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
 import { useNotifications } from '../contexts/NotificationContext';
-import { XMarkIcon, CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 const NotificationItem = ({ notification, onRemove }) => {
+  console.log("Notification data:", notification);
   const getIcon = () => {
     switch (notification.type) {
       case 'success':
@@ -20,7 +27,7 @@ const NotificationItem = ({ notification, onRemove }) => {
     }
   };
 
-  const getBackgroundColor = () => {
+  const getBackground = () => {
     switch (notification.type) {
       case 'success':
         return 'bg-green-800 border-green-600';
@@ -35,21 +42,27 @@ const NotificationItem = ({ notification, onRemove }) => {
     }
   };
 
+  // Función para mostrar texto o JSON string si es objeto
+  const renderText = (text) => {
+    if (typeof text === 'string') return text;
+    try {
+      return JSON.stringify(text, null, 2);
+    } catch {
+      return String(text);
+    }
+  };
+
   return (
-    <div className={`max-w-sm w-full border rounded-lg shadow-lg p-4 ${getBackgroundColor()} text-white`}>
+    <div className={`max-w-sm w-full border rounded-lg shadow-lg p-4 ${getBackground()} text-white`}>
       <div className="flex items-start">
-        <div className="flex-shrink-0">
-          {getIcon()}
-        </div>
+        <div className="flex-shrink-0">{getIcon()}</div>
         <div className="ml-3 w-0 flex-1">
           {notification.title && (
-            <p className="text-sm font-medium">
-              {notification.title}
-            </p>
+            <p className="text-sm font-medium text-white">{renderText(notification.title)}</p>
           )}
-          <p className="text-sm text-gray-300">
-            {notification.message}
-          </p>
+          {notification.message && (
+            <pre className="text-sm text-gray-300 whitespace-pre-wrap">{renderText(notification.message)}</pre>
+          )}
         </div>
         {notification.type !== 'loading' && (
           <div className="ml-4 flex-shrink-0 flex">
@@ -69,9 +82,7 @@ const NotificationItem = ({ notification, onRemove }) => {
 const NotificationContainer = () => {
   const { notifications, removeNotification } = useNotifications();
 
-  if (notifications.length === 0) {
-    return null;
-  }
+  if (!notifications || notifications.length === 0) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">

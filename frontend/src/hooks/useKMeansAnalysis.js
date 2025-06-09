@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { obtenerDatosAgrupamiento } from '../api';
-import { useAsyncOperationWithLoading } from './useAsyncOperationWithLoading';
+import { useAsyncOperationWithLoading } from './useAsyncOperationWithLoading'; // <--- Aquí es donde se usa
 import { useNotification } from '../contexts/NotificationContext';
 
 /**
@@ -8,7 +8,7 @@ import { useNotification } from '../contexts/NotificationContext';
  */
 export const useKMeansAnalysis = () => {
   const { showError, showSuccess } = useNotification();
-  
+
   // Form state
   const [selectedTickers, setSelectedTickers] = useState([]);
   const [selectedParameters, setSelectedParameters] = useState([]);
@@ -20,15 +20,25 @@ export const useKMeansAnalysis = () => {
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  
+
   // Results state
   const [clusterData, setClusterData] = useState([]);
   const [notification, setNotification] = useState("");
-  
+
   // Loading state with global loading system
   const { execute, isLoading } = useAsyncOperationWithLoading({
     useGlobalLoading: true,
-    showNotifications: false // We'll handle notifications manually
+    showNotifications: false, // We'll handle notifications manually
+    // ¡Mueve loadingMessage y onError AQUÍ!
+    loadingMessage: `Ejecutando agrupamiento K-Means...`, // Puedes poner un mensaje genérico
+    onError: (error) => {
+      console.error('Error en análisis K-Means:', error);
+      setClusterData([]);
+      showError(
+        error.response?.data?.message ||
+        "Error al ejecutar el agrupamiento. Verifica los parámetros e intenta nuevamente."
+      );
+    }
   });
 
   // Ticker management
@@ -98,30 +108,20 @@ export const useKMeansAnalysis = () => {
 
     await execute(async () => {
       const data = await obtenerDatosAgrupamiento(
-        selectedTickers, 
-        selectedParameters, 
-        startDate, 
+        selectedTickers,
+        selectedParameters,
+        startDate,
         endDate
       );
-      
+
       setClusterData(data);
-      
+
       // Show success notification with results
       const clusterCount = [...new Set(data.map(item => item.Cluster))].length;
       showSuccess(
         `Análisis completado: ${data.length} activos agrupados en ${clusterCount} clusters`
       );
-    }, {
-      loadingMessage: `Ejecutando agrupamiento K-Means para ${selectedTickers.length} tickers...`,
-      onError: (error) => {
-        console.error('Error en análisis K-Means:', error);
-        setClusterData([]);
-        showError(
-          error.response?.data?.message || 
-          "Error al ejecutar el agrupamiento. Verifica los parámetros e intenta nuevamente."
-        );
-      }
-    });
+    }); // <--- Ahora execute() solo toma la función asíncrona
   };
 
   // Computed values
@@ -137,11 +137,11 @@ export const useKMeansAnalysis = () => {
     clusterData,
     notification,
     isLoading,
-    
+
     // Computed
     isReadyToExecute,
     isDisabled,
-    
+
     // Actions
     handleTickerChange,
     handleRemoveTicker,
@@ -151,7 +151,7 @@ export const useKMeansAnalysis = () => {
     handleStartDateChange,
     handleEndDateChange,
     executeKMeansAnalysis,
-    
+
     // Utils
     clearNotification: () => setNotification(""),
     resetAnalysis: () => {

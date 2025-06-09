@@ -43,6 +43,9 @@ const KMeans = () => {
     executeKMeansAnalysis
   } = useKMeansAnalysis();
 
+  console.log("clusterData")
+  console.log(clusterData)
+
   return (
     <BaseLayout>
       <div className="bg-black text-white min-h-screen p-6 space-y-8">
@@ -91,10 +94,21 @@ const KMeans = () => {
         />
 
         {/* Results Visualization */}
-        <KMeansScatterPlot
-          clusterData={clusterData}
-          selectedParameters={selectedParameters}
-        />
+{/* Results Visualization */}
+{isLoading && <p>Cargando datos...</p>}
+
+{!isLoading && (
+  <>
+    {clusterData && clusterData.length > 0 ? (
+      <KMeansScatterPlot
+        clusterData={clusterData}
+        selectedParameters={selectedParameters}
+      />
+    ) : (
+      <p>No hay datos para mostrar.</p>
+    )}
+  </>
+)}
       </div>
     </BaseLayout>
   );
