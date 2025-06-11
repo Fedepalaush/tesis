@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ConfigProvider } from './contexts/ConfigContext.jsx'
 import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import { LoadingProvider } from './contexts/LoadingContext.jsx'
+import { ExecutionProvider } from './ExecutionContext.jsx'
 
 const client = new ApolloClient({
   uri: "api/graphql",
@@ -27,10 +28,12 @@ axios.get(`${apiBase}/tickers/`)
         <NotificationProvider>
           <LoadingProvider>
             <AuthProvider>
-              <ApolloProvider client={client}>        
+              <ApolloProvider client={client}>    
+                <ExecutionProvider>    
                 <TickersProvider initialTickers={res.data.data.tickers}>
                   <App />
                 </TickersProvider>
+                </ExecutionProvider>
               </ApolloProvider>
             </AuthProvider>
           </LoadingProvider>
@@ -46,9 +49,11 @@ axios.get(`${apiBase}/tickers/`)
           <LoadingProvider>
             <AuthProvider>
               <ApolloProvider client={client}>
+                <ExecutionProvider>
                 <TickersProvider initialTickers={[]}> {/* App igual funciona sin tickers */}
                   <App />
                 </TickersProvider>
+                </ExecutionProvider>
               </ApolloProvider>
             </AuthProvider>
           </LoadingProvider>
