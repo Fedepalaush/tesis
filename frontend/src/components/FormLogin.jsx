@@ -37,24 +37,19 @@ export default function Form({ route, method }) {
     }
 
     if (method === "login") {
-      const result = await execute(
-        async () => {
-          const loginResult = await login(username, password);
-          if (!loginResult.success) {
-            throw new Error(loginResult.error);
-          }
-          return loginResult;
-        },
-        {
-          successMessage: "¡Bienvenido! Has iniciado sesión correctamente",
-          errorMessage: "Las credenciales de ingreso son incorrectas",
-          showSuccessNotification: true
-        }
-      );
-      
-      if (result.success) {
-        navigate("/");
+      const result = await execute(async () => {
+      const loginResult = await login(username, password);
+      if (!loginResult.success) {
+        throw new Error(loginResult.error);
       }
+      return loginResult;
+    }, "Iniciando sesión..."); // ✅ solo string
+
+      
+    if (result.success) {
+    showSuccess("¡Bienvenido! Has iniciado sesión correctamente");
+    navigate("/");
+  }
     } else {
       // Keep register logic as before for now
       await execute(
