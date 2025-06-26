@@ -19,10 +19,10 @@ done
 echo "✅ Base de datos lista, aplicando migraciones..."
 
 # Aplicar migraciones normales, sin --fake
-
+python manage.py migrate --noinput
 
 echo "🖼 Colectando archivos estáticos..."
-
+python manage.py collectstatic --noinput --clear
 
 echo "👤 Creando superusuario si no existe..."
 export DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin}
@@ -30,13 +30,15 @@ export DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
 export DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-Cambiar123}
 
 if ! python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); print(User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists())" | grep -q True; then
-  python manage.py migrate --noinput
   python manage.py createsuperuser --noinput
-  python manage.py collectstatic --noinput
   python manage.py import_stock_data
+else
+  echo "ℹ️  Superusuario ya existe, saltando creación"
 fi
 
 echo "📈 Importando datos de acciones..."
+# Ejecutar importación de datos siempre para mantener datos actualizados
+python manage.py import_stock_data || echo "⚠️ Warning: Fallo en importación de datos de stock"
 
 
 echo "✅ Backend listo, arrancando servidor..."

@@ -2,7 +2,7 @@ FROM python:3.9-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    STATIC_ROOT=/static 
+    STATIC_ROOT=/static
     
 WORKDIR /app
 
@@ -17,12 +17,11 @@ RUN apt-get update && apt-get upgrade -y && \
     
 COPY . .
 
-
 # ¡NO exponemos puertos! El contenedor vive solo en la red interna
 # EXPOSE 8000   ← Eliminado
 
-# Recogemos estáticos en la ruta del volumen
-RUN python manage.py collectstatic --noinput
+# Recogemos estáticos en la ruta del volumen ANTES de cambiar permisos
+RUN python manage.py collectstatic --noinput --clear
 
 # Permisos para el entrypoint
 RUN chmod +x entrypoint.sh

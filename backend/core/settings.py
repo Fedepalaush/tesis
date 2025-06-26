@@ -159,8 +159,15 @@ DATABASES = {
 # Static & media
 # --------------------------------------------------------------------
 STATIC_URL = "/static/"
-#STATIC_ROOT = os.getenv("STATIC_ROOT", "/app/static")      # ✅ coincide con el volumen
-STATIC_ROOT = '/static/'
+STATIC_ROOT = os.getenv("STATIC_ROOT", "/static")      # ✅ coincide con el volumen
+STATICFILES_DIRS = []
+
+# Configuración adicional para archivos estáticos de Django Admin
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/app/media")         # opcional si montas media
 
